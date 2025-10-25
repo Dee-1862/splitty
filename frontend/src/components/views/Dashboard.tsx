@@ -1,21 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../AuthContext';
-import { supabase } from '../../supabase';
 import { Plus, UtensilsCrossed, Flame, Leaf, Target } from 'lucide-react';
 import { LoadingSpinner } from '../common/LoadingSpinner';
+import { getMeals, getProfile, calculateDailyStats, type Meal, type Profile } from '../../utils/database';
+import { AddMealModal } from './AddMealModal';
 
-interface Meal {
-  id: string;
-  meal_type: string;
-  image_url: string;
-  food_items: string[];
-  calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fats_g: number;
-  carbon_kg: number;
-  date: string;
-}
 
 interface DailyStats {
   total_calories: number;
@@ -32,7 +21,9 @@ interface DailyStats {
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [meals, setMeals] = useState<Meal[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [dailyStats, setDailyStats] = useState<DailyStats>({
     total_calories: 0,
     total_protein: 0,
@@ -44,56 +35,72 @@ export const Dashboard: React.FC = () => {
     goal_carbs: 250,
     goal_fats: 67
   });
+  const fetchingRef = useRef(false);
+
+  const fetchData = useCallback(async () => {
+    if (fetchingRef.current || !user) return; // Prevent multiple simultaneous fetches
+
+    try {
+      console.log('fetchData called, user ID:', user.id);
+      fetchingRef.current = true;
+      setLoading(true);
+      const today = new Date().toISOString().split('T')[0];
+      console.log('Fetching data for date:', today);
+      
+      // Fetch user profile and today's meals in parallel
+      const [profileData, mealsData] = await Promise.all([
+        getProfile(user.id),
+        getMeals(user.id, today)
+      ]);
+
+      console.log('Profile data:', profileData);
+      console.log('Meals data:', mealsData);
+
+      setProfile(profileData);
+      setMeals(mealsData);
+
+      // Calculate daily stats using the utility function
+      const stats = calculateDailyStats(mealsData, profileData || {});
+      console.log('Calculated stats:', stats);
+      setDailyStats(stats);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      console.log('Setting loading to false');
+      setLoading(false);
+      fetchingRef.current = false;
+    }
+  }, [user?.id]); // Only depend on user ID
 
   useEffect(() => {
+    console.log('Dashboard useEffect triggered, user:', user);
     if (user) {
-      fetchMeals();
-    }
-  }, [user]);
-
-  const fetchMeals = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      
-      const { data, error } = await supabase
-        .from('meals')
-        .select('*')
-        .eq('user_id', user?.id)
-        .eq('date', today)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setMeals(data || []);
-
-      // Calculate daily totals
-      const totals = data?.reduce((acc, meal) => ({
-        total_calories: acc.total_calories + (meal.calories || 0),
-        total_protein: acc.total_protein + (meal.protein_g || 0),
-        total_carbs: acc.total_carbs + (meal.carbs_g || 0),
-        total_fats: acc.total_fats + (meal.fats_g || 0),
-        total_carbon: acc.total_carbon + (meal.carbon_kg || 0),
-        goal_calories: acc.goal_calories,
-        goal_protein: acc.goal_protein,
-        goal_carbs: acc.goal_carbs,
-        goal_fats: acc.goal_fats
-      }), dailyStats) || dailyStats;
-
-      setDailyStats(totals);
-    } catch (error) {
-      console.error('Error fetching meals:', error);
-    } finally {
+      console.log('User found, fetching data...');
+      fetchData();
+    } else {
+      console.log('No user found, setting loading to false');
       setLoading(false);
     }
-  };
+  }, [user?.id, fetchData]); // Include fetchData in dependencies
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-20 pb-24">
-        <LoadingSpinner />
+      <div className="min-h-screen pt-20 pb-24 flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner />
+          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+        </div>
       </div>
     );
   }
+
+  // Debug info
+  console.log('Rendering dashboard with:', { 
+    loading, 
+    user: !!user, 
+    mealsCount: meals.length, 
+    profile: !!profile 
+  });
 
   const getProgressColor = (percent: number) => {
     if (percent >= 90 && percent <= 110) return 'bg-green-500';
@@ -107,7 +114,9 @@ export const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-gray-50 pt-4 pb-24 px-4">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Welcome back, {profile?.full_name || user?.email || 'User'}!
+        </h1>
         <p className="text-gray-600">Track your daily nutrition</p>
       </div>
 
@@ -192,7 +201,10 @@ export const Dashboard: React.FC = () => {
       {/* Meals Section */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-gray-900">Today's Meals</h2>
-        <button className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors">
+        <button 
+          onClick={() => setShowAddMealModal(true)}
+          className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+        >
           <Plus size={20} />
           Add Meal
         </button>
@@ -211,6 +223,14 @@ export const Dashboard: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Add Meal Modal */}
+      <AddMealModal
+        isOpen={showAddMealModal}
+        onClose={() => setShowAddMealModal(false)}
+        onMealAdded={fetchData}
+        userId={user?.id || ''}
+      />
     </div>
   );
 };

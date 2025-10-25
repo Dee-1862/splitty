@@ -30,9 +30,17 @@ import { PublicLayout } from "./components/layout/PublicLayout";
 import { Login } from "./components/auth/Login";
 import { Register } from "./components/auth/Register";
 import { Dashboard } from "./components/views/Dashboard";
+import { USDATest } from "./components/views/USDATest";
 import { Cookbook } from "./components/views/Cookbook";
 import { Profile } from "./components/views/Profile";
+import { ProfileFallback } from "./components/views/ProfileFallback";
+import { ProfileWithDebugToggle } from "./components/views/ProfileWithDebugToggle";
+import { EditProfile } from "./components/views/EditProfile";
+import { DietaryPreferences } from "./components/views/DietaryPreferences";
+import { Notifications } from "./components/views/Notifications";
+import { Privacy } from "./components/views/Privacy";
 import { TabNavigation } from "./components/layout/TabNavigation";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 
 // Landing Page Component
 const LandingPage = () => {
@@ -99,7 +107,27 @@ export const router = createBrowserRouter([
       },
       {
         path: "/profile",
-        element: React.createElement(ProtectedLayout, null, React.createElement(Profile)),
+        element: React.createElement(ProtectedLayout, null, React.createElement(ProfileWithDebugToggle)),
+      },
+      {
+        path: "/edit-profile",
+        element: React.createElement(ProtectedLayout, null, React.createElement(EditProfile)),
+      },
+      {
+        path: "/dietary-preferences",
+        element: React.createElement(ProtectedLayout, null, React.createElement(DietaryPreferences)),
+      },
+      {
+        path: "/notifications",
+        element: React.createElement(ProtectedLayout, null, React.createElement(Notifications)),
+      },
+      {
+        path: "/privacy",
+        element: React.createElement(ProtectedLayout, null, React.createElement(Privacy)),
+      },
+      {
+        path: "/usda-test",
+        element: React.createElement(ProtectedLayout, null, React.createElement(USDATest)),
       },
     ],
   },

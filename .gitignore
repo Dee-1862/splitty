@@ -9,6 +9,7 @@ build/
 frontend/dist/
 frontend/build/
 *.local
+.sql
 
 # Environment variables
 .env
