@@ -114,35 +114,35 @@ export const EditProfile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-20 pb-24 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-950 pt-20 pb-24 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner />
-          <p className="mt-4 text-gray-600">Loading profile...</p>
+          <p className="mt-4 text-gray-300">Loading profile...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-4 pb-24 px-4">
+    <div className="min-h-screen bg-gray-950 pt-4 pb-24 px-4">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={() => navigate('/profile')}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          className="p-2 hover:bg-gray-800 rounded-full transition-colors text-white"
         >
           <ArrowLeft size={24} />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Edit Profile</h1>
+        <h1 className="text-2xl font-bold text-white">Edit Profile</h1>
       </div>
 
       <div className="max-w-2xl mx-auto">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Profile Picture */}
-          <div className="bg-white rounded-2xl shadow-md p-6">
-            <h2 className="text-lg font-semibold mb-4">Profile Picture</h2>
+          <div className="bg-gray-900 rounded-2xl shadow-lg p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Profile Picture</h2>
             <div className="flex items-center gap-6">
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+              <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center overflow-hidden">
                 {formData.avatar_url ? (
                   <img 
                     src={formData.avatar_url} 
@@ -166,7 +166,7 @@ export const EditProfile: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, avatar_url: '' }))}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    className="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
                   >
                     Remove
                   </button>
@@ -174,7 +174,7 @@ export const EditProfile: React.FC = () => {
                 
                 {/* Custom URL Input */}
                 <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
                     Or enter custom URL
                   </label>
                   <input
@@ -182,7 +182,7 @@ export const EditProfile: React.FC = () => {
                     value={formData.avatar_url}
                     onChange={handleCustomAvatarChange}
                     placeholder="https://example.com/avatar.jpg"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-800 text-white placeholder-gray-400"
                   />
                 </div>
               </div>
@@ -198,11 +198,11 @@ export const EditProfile: React.FC = () => {
           </div>
 
           {/* Personal Information */}
-          <div className="bg-white rounded-2xl shadow-md p-6">
-            <h2 className="text-lg font-semibold mb-4">Personal Information</h2>
+          <div className="bg-gray-900 rounded-2xl shadow-lg p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Personal Information</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Full Name
                 </label>
                 <input
@@ -211,22 +211,22 @@ export const EditProfile: React.FC = () => {
                   value={formData.full_name}
                   onChange={handleInputChange}
                   placeholder="Enter your full name"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-800 text-white placeholder-gray-400"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Email
                 </label>
                 <input
                   type="email"
                   value={profile?.email || user?.email || ''}
                   disabled
-                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                  className="w-full p-3 border border-gray-600 rounded-lg bg-gray-800 text-gray-400"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-400 mt-1">
                   Email cannot be changed here. Contact support if needed.
                 </p>
               </div>
@@ -238,7 +238,7 @@ export const EditProfile: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/profile')}
-              className="flex-1 px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              className="flex-1 px-6 py-3 text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
             >
               Cancel
             </button>

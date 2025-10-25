@@ -108,16 +108,16 @@ export const Profile: React.FC = () => {
   const activeGoal = goals.find(goal => goal.is_active);
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-4 pb-24 px-4">
+    <div className="min-h-screen bg-gray-950 pt-4 pb-24 px-4">
       {/* Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg p-6 mb-4 text-white">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center">
+          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center overflow-hidden">
             {profile?.avatar_url ? (
-              <img 
-                src={profile.avatar_url} 
-                alt="Profile" 
-                className="w-20 h-20 rounded-full object-cover"
+              <img
+                src={profile.avatar_url}
+                alt="Profile"
+                className="w-20 h-20 object-cover rounded-full"
               />
             ) : (
               <User className="text-primary-600" size={40} />
@@ -125,7 +125,7 @@ export const Profile: React.FC = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold">{profile?.full_name || user?.email || 'User'}</h1>
-            <p className="text-primary-100">{profile?.email || user?.email}</p>
+            <p className="text-primary-100">{user?.email}</p>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-4">
@@ -145,10 +145,10 @@ export const Profile: React.FC = () => {
       </div>
 
       {/* Goals Card */}
-      <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
+      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4">
         <div className="flex items-center gap-3 mb-4">
           <Target className="text-primary-600" size={24} />
-          <h2 className="text-lg font-semibold">My Goals</h2>
+          <h2 className="text-lg font-semibold text-white">My Goals</h2>
         </div>
         <div className="space-y-3">
           <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl">
@@ -175,18 +175,18 @@ export const Profile: React.FC = () => {
       </div>
 
       {/* Analytics Card */}
-      <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
+      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4">
         <div className="flex items-center gap-3 mb-4">
           <TrendingUp className="text-primary-600" size={24} />
-          <h2 className="text-lg font-semibold">Analytics</h2>
+          <h2 className="text-lg font-semibold text-white">Analytics</h2>
         </div>
         <div className="space-y-4">
           <div>
             <div className="flex justify-between mb-2">
-              <span className="text-sm text-gray-600">Weekly Average</span>
-              <span className="text-sm font-semibold">{stats.weeklyAvgCalories} cal</span>
+              <span className="text-sm text-gray-300">Weekly Average</span>
+              <span className="text-sm font-semibold text-white">{stats.weeklyAvgCalories} cal</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-700 rounded-full h-2">
               <div 
                 className="bg-primary-600 h-2 rounded-full" 
                 style={{ 
@@ -197,10 +197,10 @@ export const Profile: React.FC = () => {
           </div>
           <div>
             <div className="flex justify-between mb-2">
-              <span className="text-sm text-gray-600">Protein Intake</span>
-              <span className="text-sm font-semibold">{stats.avgProtein}g avg</span>
+              <span className="text-sm text-gray-300">Protein Intake</span>
+              <span className="text-sm font-semibold text-white">{stats.avgProtein}g avg</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-700 rounded-full h-2">
               <div 
                 className="bg-blue-500 h-2 rounded-full" 
                 style={{ 
@@ -213,48 +213,48 @@ export const Profile: React.FC = () => {
       </div>
 
       {/* Settings Card */}
-      <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
+      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4">
         <div className="flex items-center gap-3 mb-4">
           <Settings className="text-primary-600" size={24} />
-          <h2 className="text-lg font-semibold">Settings</h2>
+          <h2 className="text-lg font-semibold text-white">Settings</h2>
         </div>
         <div className="space-y-3">
           <button 
             onClick={() => navigate('/edit-profile')}
-            className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-full text-left p-3 rounded-lg hover:bg-gray-800 transition-colors"
           >
-            <p className="font-medium text-gray-900">Edit Profile</p>
-            <p className="text-sm text-gray-500">Update personal information</p>
+            <p className="font-medium text-white">Edit Profile</p>
+            <p className="text-sm text-gray-400">Update personal information</p>
           </button>
           <button 
             onClick={() => navigate('/dietary-preferences')}
-            className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-full text-left p-3 rounded-lg hover:bg-gray-800 transition-colors"
           >
-            <p className="font-medium text-gray-900">Dietary Preferences</p>
-            <p className="text-sm text-gray-500">Manage goals and nutrition targets</p>
+            <p className="font-medium text-white">Dietary Preferences</p>
+            <p className="text-sm text-gray-400">Manage goals and nutrition targets</p>
           </button>
           <button 
             onClick={() => navigate('/notifications')}
-            className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-full text-left p-3 rounded-lg hover:bg-gray-800 transition-colors"
           >
-            <p className="font-medium text-gray-900">Notification Settings</p>
-            <p className="text-sm text-gray-500">Customize reminders</p>
+            <p className="font-medium text-white">Notification Settings</p>
+            <p className="text-sm text-gray-400">Customize reminders</p>
           </button>
           <button 
             onClick={() => navigate('/privacy')}
-            className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-full text-left p-3 rounded-lg hover:bg-gray-800 transition-colors"
           >
-            <p className="font-medium text-gray-900">Privacy & Security</p>
-            <p className="text-sm text-gray-500">Manage your data and privacy</p>
+            <p className="font-medium text-white">Privacy & Security</p>
+            <p className="text-sm text-gray-400">Manage your data and privacy</p>
           </button>
         </div>
       </div>
 
       {/* Meal History */}
-      <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
+      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4">
         <div className="flex items-center gap-3 mb-4">
           <Calendar className="text-primary-600" size={24} />
-          <h2 className="text-lg font-semibold">Recent Meals</h2>
+          <h2 className="text-lg font-semibold text-white">Recent Meals</h2>
         </div>
         <div className="space-y-3">
           {meals.slice(0, 5).map((meal) => {
@@ -280,21 +280,21 @@ export const Profile: React.FC = () => {
             };
 
             return (
-              <div key={meal.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+              <div key={meal.id} className="flex items-center gap-3 p-3 bg-gray-800 rounded-xl">
                 <div className="text-2xl">{getMealIcon(meal.meal_type)}</div>
                 <div className="flex-1">
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-white">
                     {meal.food_items.slice(0, 2).join(', ')}
                     {meal.food_items.length > 2 && '...'}
                   </p>
-                  <p className="text-sm text-gray-500">{formatDate(meal.date)}</p>
+                  <p className="text-sm text-gray-400">{formatDate(meal.date)}</p>
                 </div>
-                <span className="text-sm font-semibold text-gray-900">{meal.calories} cal</span>
+                <span className="text-sm font-semibold text-white">{meal.calories} cal</span>
               </div>
             );
           })}
           {meals.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-400">
               <p>No meals logged yet</p>
               <p className="text-sm">Start tracking your nutrition!</p>
             </div>

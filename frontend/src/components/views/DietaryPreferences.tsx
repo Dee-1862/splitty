@@ -179,40 +179,40 @@ export const DietaryPreferences: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-20 pb-24 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-950 pt-20 pb-24 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner />
-          <p className="mt-4 text-gray-600">Loading preferences...</p>
+          <p className="mt-4 text-gray-300">Loading preferences...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-4 pb-24 px-4">
+    <div className="min-h-screen bg-gray-950 pt-4 pb-24 px-4">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={() => navigate('/profile')}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          className="p-2 hover:bg-gray-800 rounded-full transition-colors text-white"
         >
           <ArrowLeft size={24} />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Dietary Preferences</h1>
+        <h1 className="text-2xl font-bold text-white">Dietary Preferences</h1>
       </div>
 
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Nutrition Goals */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="bg-gray-900 rounded-2xl shadow-lg p-6">
           <div className="flex items-center gap-3 mb-4">
             <Target className="text-primary-600" size={24} />
-            <h2 className="text-lg font-semibold">Nutrition Goals</h2>
+            <h2 className="text-lg font-semibold text-white">Nutrition Goals</h2>
           </div>
           
           <form onSubmit={handleNutritionSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Daily Calories
                 </label>
                 <input
@@ -220,13 +220,13 @@ export const DietaryPreferences: React.FC = () => {
                   name="goal_calories"
                   value={nutritionForm.goal_calories}
                   onChange={handleNutritionChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-800 text-white"
                   min="1000"
                   max="5000"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Protein (g)
                 </label>
                 <input
@@ -234,7 +234,7 @@ export const DietaryPreferences: React.FC = () => {
                   name="goal_protein"
                   value={nutritionForm.goal_protein}
                   onChange={handleNutritionChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-800 text-white"
                   min="50"
                   max="300"
                 />
@@ -243,7 +243,7 @@ export const DietaryPreferences: React.FC = () => {
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Carbs (g)
                 </label>
                 <input
@@ -251,13 +251,13 @@ export const DietaryPreferences: React.FC = () => {
                   name="goal_carbs"
                   value={nutritionForm.goal_carbs}
                   onChange={handleNutritionChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-800 text-white"
                   min="50"
                   max="500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Fats (g)
                 </label>
                 <input
@@ -265,7 +265,7 @@ export const DietaryPreferences: React.FC = () => {
                   name="goal_fats"
                   value={nutritionForm.goal_fats}
                   onChange={handleNutritionChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-800 text-white"
                   min="20"
                   max="200"
                 />
@@ -293,22 +293,22 @@ export const DietaryPreferences: React.FC = () => {
         </div>
 
         {/* Fitness Goals */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="bg-gray-900 rounded-2xl shadow-lg p-6">
           <div className="flex items-center gap-3 mb-4">
             <Target className="text-primary-600" size={24} />
-            <h2 className="text-lg font-semibold">Fitness Goals</h2>
+            <h2 className="text-lg font-semibold text-white">Fitness Goals</h2>
           </div>
           
           <form onSubmit={handleGoalSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Goal Type
               </label>
               <select
                 name="goal_type"
                 value={goalForm.goal_type}
                 onChange={handleGoalChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-800 text-white"
               >
                 <option value="maintenance">Maintain Weight</option>
                 <option value="weight_loss">Lose Weight</option>
@@ -319,7 +319,7 @@ export const DietaryPreferences: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Current Weight (kg)
                 </label>
                 <input
@@ -327,14 +327,14 @@ export const DietaryPreferences: React.FC = () => {
                   name="current_weight"
                   value={goalForm.current_weight}
                   onChange={handleGoalChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-800 text-white"
                   min="30"
                   max="300"
                   step="0.1"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Target Weight (kg)
                 </label>
                 <input
@@ -342,7 +342,7 @@ export const DietaryPreferences: React.FC = () => {
                   name="target_weight"
                   value={goalForm.target_weight}
                   onChange={handleGoalChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-800 text-white"
                   min="30"
                   max="300"
                   step="0.1"
@@ -351,7 +351,7 @@ export const DietaryPreferences: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Target Date
               </label>
               <input
@@ -359,7 +359,7 @@ export const DietaryPreferences: React.FC = () => {
                 name="target_date"
                 value={goalForm.target_date}
                 onChange={handleGoalChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-800 text-white"
                 min={new Date().toISOString().split('T')[0]}
               />
             </div>

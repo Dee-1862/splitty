@@ -7,19 +7,19 @@ export const Cookbook: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-4 pb-24 px-4">
+    <div className="min-h-screen bg-gray-950 pt-4 pb-24 px-4">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <ChefHat className="text-primary-600" size={32} />
-          <h1 className="text-3xl font-bold text-gray-900">Cookbook</h1>
+          <h1 className="text-3xl font-bold text-white">Cookbook</h1>
         </div>
-        <p className="text-gray-600">AI-powered recipe generation from ingredients</p>
+        <p className="text-white/60">AI-powered recipe generation from ingredients</p>
       </div>
 
       {/* Mode Selector */}
-      <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
-        <h2 className="text-lg font-semibold mb-4">Choose Mode</h2>
+      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4">
+        <h2 className="text-lg font-semibold text-white mb-4">Choose Mode</h2>
         <div className="grid grid-cols-2 gap-4">
           <button
             onClick={() => setMode('assemble')}
@@ -53,8 +53,8 @@ export const Cookbook: React.FC = () => {
       </div>
 
       {/* Upload Section */}
-      <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
-        <h2 className="text-lg font-semibold mb-4">Upload Ingredients</h2>
+      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4">
+        <h2 className="text-lg font-semibold text-white mb-4">Upload Ingredients</h2>
         
         {/* Camera Button */}
         <button className="w-full bg-primary-600 text-white py-4 rounded-xl mb-4 hover:bg-primary-700 transition-colors flex items-center justify-center gap-3">
@@ -74,7 +74,7 @@ export const Cookbook: React.FC = () => {
       </div>
 
       {/* Manual Input */}
-      <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
+      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           <input
@@ -95,26 +95,26 @@ export const Cookbook: React.FC = () => {
 
       {/* Recipes List */}
       {recipes.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-md p-12 text-center">
-          <ChefHat className="mx-auto text-gray-300 mb-4" size={48} />
-          <p className="text-gray-500 mb-2">No recipes yet</p>
-          <p className="text-sm text-gray-400">
+        <div className="bg-gray-900 rounded-2xl shadow-lg p-12 text-center">
+          <ChefHat className="mx-auto text-gray-600 mb-4" size={48} />
+          <p className="text-white/60 mb-2 font-medium">No recipes yet</p>
+          <p className="text-sm text-gray-500">
             Upload ingredients to generate AI-powered recipes!
           </p>
         </div>
       ) : (
         <div className="space-y-4">
           {recipes.map((recipe, index) => (
-            <div key={index} className="bg-white rounded-2xl shadow-md overflow-hidden">
+            <div key={index} className="bg-gray-900 rounded-2xl shadow-lg overflow-hidden">
               <img
                 src={recipe.image || 'https://via.placeholder.com/400x200'}
                 alt={recipe.title}
                 className="w-full h-48 object-cover"
               />
               <div className="p-4">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{recipe.title}</h3>
-                <p className="text-sm text-gray-600 mb-3">{recipe.description}</p>
-                <div className="flex items-center gap-4 text-sm text-gray-700">
+                <h3 className="text-xl font-bold text-white mb-2">{recipe.title}</h3>
+                <p className="text-sm text-gray-400 mb-3">{recipe.description}</p>
+                <div className="flex items-center gap-4 text-sm text-gray-300">
                   <span>⏱️ {recipe.prep_time}</span>
                   <span>🔥 {recipe.difficulty}</span>
                   <span>🌱 {recipe.carbon_kg}kg CO₂</span>
