@@ -1,7 +1,15 @@
 import React from 'react';
-import { User, Target, TrendingUp, Calendar, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, Target, TrendingUp, Calendar, Settings, LogOut } from 'lucide-react';
+import { supabase } from '../../supabase';
 
 export const Profile: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
   return (
     <div className="min-h-screen bg-gray-50 pt-4 pb-24 px-4">
       {/* Header */}
@@ -103,6 +111,16 @@ export const Profile: React.FC = () => {
           <button className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors">
             <p className="font-medium text-gray-900">Privacy & Security</p>
             <p className="text-sm text-gray-500">Manage your data and privacy</p>
+          </button>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 transition-colors text-red-600"
+          >
+            <LogOut size={20} />
+            <div>
+              <p className="font-medium">Logout</p>
+              <p className="text-sm text-red-400">Sign out of your account</p>
+            </div>
           </button>
         </div>
       </div>
