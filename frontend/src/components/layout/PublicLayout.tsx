@@ -2,31 +2,43 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '../../AuthContext';
 
-
 export const PublicLayout: React.FC = () => {
-  const { isAuthenticated } = useAuth(); 
+  const { isAuthenticated } = useAuth();
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8f8f8' }}>
-      <header style={{ padding: '15px', background: '#ffffff', borderBottom: '1px solid #ddd', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-        <div style={{ maxWidth: '960px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ fontSize: '24px', color: '#333' }}>Simple React App</h1>
-          <nav>
-            <a href="/home" style={{ marginRight: '15px', color: '#007bff' }}>Home</a>
-            <a href="/about" style={{ marginRight: '15px', color: '#007bff' }}>About</a>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">MindMeal</h1>
+          <nav className="flex gap-4">
             {isAuthenticated ? (
-              <a href="/dashboard" style={{ marginRight: '15px', color: '#007bff' }}>Dashboard</a>
+              <a
+                href="/dashboard"
+                className="text-primary-600 hover:text-primary-700 font-medium"
+              >
+                Dashboard
+              </a>
             ) : (
               <>
-                <a href="/" style={{ marginRight: '15px', color: '#007bff' }}>Login</a>
-                <a href="/register" style={{ marginRight: '15px', color: '#007bff' }}>Sign Up</a>
+                <a
+                  href="/login"
+                  className="text-primary-600 hover:text-primary-700 font-medium"
+                >
+                  Login
+                </a>
+                <a
+                  href="/register"
+                  className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                >
+                  Sign Up
+                </a>
               </>
             )}
           </nav>
         </div>
       </header>
-      <main style={{ padding: '20px' }}>
-        <Outlet /> 
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <Outlet />
       </main>
     </div>
   );

@@ -18,7 +18,7 @@ export const Register: React.FC = () => {
       setError("Password must be at least 6 characters long.");
       return;
     }
-    
+
     const { data, error } = await supabase.auth.signUp({ email, password });
 
     if (error) {
@@ -26,36 +26,58 @@ export const Register: React.FC = () => {
     } else {
       if (data.user) {
         setMessage('Registration successful! Redirecting to Dashboard...');
-        setTimeout(() => navigate('/dashboard'), 1500); 
+        setTimeout(() => navigate('/dashboard'), 1500);
       } else {
         setMessage('Success! Check your email to confirm your account before logging in.');
-        setTimeout(() => navigate('/'), 3000); 
+        setTimeout(() => navigate('/'), 3000);
       }
     }
   };
 
   return (
-    <div style={{ maxWidth: '350px', margin: '20px auto', padding: '25px', border: '1px solid #ddd', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Sign Up</h2>
-      {message && <p style={{ color: '#48bb78', marginBottom: '15px', fontWeight: 'bold' }}>{message}</p>}
+    <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-2xl shadow-lg">
+      <h2 className="text-3xl font-bold text-center mb-6 text-gray-900">Sign Up</h2>
+      {message && (
+        <p className="text-green-600 mb-4 font-semibold text-center">{message}</p>
+      )}
       {!message && (
         <form onSubmit={handleRegister}>
-          <div style={{ marginBottom: '10px' }}>
-            <label style={{ display: 'block', marginBottom: '4px' }}>Email:</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} />
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email:</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+            />
           </div>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '4px' }}>Password (min 6 chars):</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }} />
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Password (min 6 chars):
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+            />
           </div>
-          <button type="submit" style={{ width: '100%', padding: '10px', background: '#38a169', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+          <button
+            type="submit"
+            className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md hover:shadow-lg"
+          >
             Register
           </button>
         </form>
       )}
-      {error && <p style={{ color: '#e53e3e', marginTop: '10px', fontSize: '14px' }}>{error}</p>}
-      <p style={{ textAlign: 'center', marginTop: '15px', fontSize: '14px' }}>
-        Already have an account? <a href="/" style={{ color: '#007bff' }}>Log in</a>
+      {error && <p className="text-red-500 mt-4 text-sm text-center">{error}</p>}
+      <p className="text-center mt-6 text-sm text-gray-600">
+        Already have an account?{' '}
+        <a href="/login" className="text-primary-600 hover:text-primary-700 font-medium">
+          Log in
+        </a>
       </p>
     </div>
   );
