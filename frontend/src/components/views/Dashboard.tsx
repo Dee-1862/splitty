@@ -109,6 +109,24 @@ export const Dashboard: React.FC = () => {
     return () => clearTimeout(timer);
   }, [calorieProgress, proteinProgress, carbsProgress, fatsProgress, loading]);
 
+  // Get status message
+  const getCalorieStatus = () => {
+    const percent = calorieProgress;
+    if (percent < 10) return { text: "Just getting started! 🌱", color: "text-gray-400" };
+    if (percent < 50) return { text: "Good progress 💪", color: "text-blue-400" };
+    if (percent < 90) return { text: "Almost there! 🎯", color: "text-yellow-400" };
+    if (percent < 100) return { text: "Nearly perfect! ⭐", color: "text-green-400" };
+    return { text: "Goal achieved! 🎉", color: "text-green-400" };
+  };
+
+  const getCarbonStatus = () => {
+    const kg = dailyStats.total_carbon;
+    if (kg < 1) return { text: "Eco champion! 🌟", color: "text-green-400", bgColor: "bg-green-500/20", borderColor: "border-green-500/30" };
+    if (kg < 3) return { text: "Great choices 🌿", color: "text-green-400", bgColor: "bg-green-500/20", borderColor: "border-green-500/30" };
+    if (kg < 5) return { text: "Stay mindful 🌱", color: "text-yellow-400", bgColor: "bg-yellow-500/20", borderColor: "border-yellow-500/30" };
+    return { text: "Try alternatives 🔄", color: "text-orange-400", bgColor: "bg-orange-500/20", borderColor: "border-orange-500/30" };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen pt-20 pb-24 bg-gray-950">
@@ -125,25 +143,47 @@ export const Dashboard: React.FC = () => {
     fetching: fetchingRef.current
   });
 
+  const calorieStatus = getCalorieStatus();
+  const carbonStatus = getCarbonStatus();
+
+  // Get current date formatted
+  const today = new Date();
+  const dateString = today.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+
   return (
-    <div className="min-h-screen bg-gray-950 pt-4 pb-24 px-4">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-950 pt-4 pb-24 px-4 max-w-2xl mx-auto">
+      {/* Header with Date */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-2">Your Day Today</h1>
-        <p className="text-white/60">Track your daily nutrition</p>
+        <p className="text-sm text-gray-500 mb-1">📅 {dateString}</p>
+        <h1 className="text-3xl font-bold text-white mb-1">Your Day Today</h1>
+        <p className="text-gray-400">Track your daily nutrition</p>
       </div>
 
       {/* Progress Ring - Calories */}
-      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4">
+      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4 border border-gray-800">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           <p className="text-white text-sm font-medium">CALORIES</p>
+          <span className={`text-sm font-bold ${calorieStatus.color}`}>
+            {Math.round(calorieProgress)}%
+          </span>
         </div>
         
-        {/* Calories Count */}
-        <p className="text-white text-2xl font-bold mb-4">
-          {dailyStats.total_calories} / {dailyStats.goal_calories} cal
-        </p>
+        {/* Calories Count - Bigger consumed value */}
+        <div className="flex items-baseline gap-2 mb-4">
+          <span className="text-5xl font-bold text-white">
+            {dailyStats.total_calories}
+          </span>
+          <span className="text-3xl text-gray-600">/</span>
+          <span className="text-3xl text-gray-500">
+            {dailyStats.goal_calories}
+          </span>
+          <span className="text-xl text-gray-500">cal</span>
+        </div>
         
         {/* Progress Bar - Segmented (40 segments) */}
         <div className="flex gap-0.5">
@@ -160,6 +200,11 @@ export const Dashboard: React.FC = () => {
             );
           })}
         </div>
+
+        {/* Status Message */}
+        <p className={`text-sm mt-3 text-center ${calorieStatus.color}`}>
+          {calorieStatus.text}
+        </p>
       </div>
 
       {/* Macros */}
@@ -220,18 +265,63 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Carbon Footprint */}
-      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4">
-        <div className="flex items-center justify-between">
+      <div className={`bg-gray-900 rounded-2xl shadow-lg p-6 mb-4 border ${carbonStatus.borderColor}`}>
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Leaf className="text-green-500" size={24} />
+            <div className={`w-12 h-12 ${carbonStatus.bgColor} rounded-xl flex items-center justify-center`}>
+              <Leaf className={carbonStatus.color} size={24} />
+            </div>
             <div>
-              <p className="text-xs text-white/60 uppercase tracking-wide">Carbon Footprint</p>
-              <p className="text-xl font-bold text-white">
-                {dailyStats.total_carbon.toFixed(2)} kg CO₂
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Carbon Footprint</p>
+              <p className="text-2xl font-bold text-white">
+                {dailyStats.total_carbon.toFixed(2)} kg
               </p>
             </div>
           </div>
-          <Target className="text-green-500" size={24} />
+          <div className="text-right">
+            <p className="text-xs text-gray-500">Daily Budget</p>
+            <p className="text-sm font-medium text-gray-400">5.0 kg</p>
+          </div>
+        </div>
+
+                                   {/* Progress Bar - Segmented */}
+         <div className="relative h-3 bg-gray-800 rounded-full overflow-hidden mb-3">
+           {/* Background segments */}
+           <div className="absolute inset-0 flex">
+             <div className="w-1/3 bg-gray-700 border-r border-gray-600"></div>
+             <div className="w-1/3 bg-gray-700 border-r border-gray-600"></div>
+             <div className="w-1/3 bg-gray-700"></div>
+           </div>
+           {/* Filled bar with color gradient */}
+           <div 
+             className="absolute top-0 left-0 h-full rounded-full transition-all duration-1000"
+             style={{ 
+               width: `${Math.min((dailyStats.total_carbon / 5) * 100, 100)}%`,
+               background: (() => {
+                 const percent = (dailyStats.total_carbon / 5) * 100;
+                 if (percent <= 33) {
+                   // Green in first third
+                   return 'linear-gradient(to right, #4ade80, #22c55e)';
+                 } else if (percent <= 66) {
+                   // Green to yellow in second third
+                   return 'linear-gradient(to right, #4ade80, #22c55e, #eab308, #facc15)';
+                 } else {
+                   // Green to yellow to red in third section
+                   return 'linear-gradient(to right, #4ade80, #22c55e, #eab308, #facc15, #f87171, #ef4444)';
+                 }
+               })()
+             }}
+           />
+           {/* Segment divider bars */}
+           <div className="absolute top-0 left-1/3 h-full w-px bg-gray-600"></div>
+           <div className="absolute top-0 left-2/3 h-full w-px bg-gray-600"></div>
+         </div>
+
+        {/* Status Badge */}
+        <div className="text-center">
+          <span className={`text-xs ${carbonStatus.color} ${carbonStatus.bgColor} px-4 py-2 rounded-full border ${carbonStatus.borderColor}`}>
+            {carbonStatus.text}
+          </span>
         </div>
       </div>
 
@@ -325,10 +415,15 @@ const CircularProgressMacro = ({ percent, color, size }: { percent: number; colo
   }
   
   return (
-    <div className="flex items-center justify-center">
+    <div className="relative flex items-center justify-center">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         {segments}
       </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-xs font-bold text-white">
+          {Math.round(percent)}%
+        </span>
+      </div>
     </div>
   );
 };
