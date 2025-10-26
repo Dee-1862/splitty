@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../supabase';
 import { updateProfile, addUserGoal } from '../../utils/database';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useAuth } from '../../AuthContext';
@@ -20,12 +19,13 @@ export const Onboarding: React.FC = () => {
     weight: '',
     activity_level: 'light',
     goal_type: 'maintenance',
-    target_weight: ''
+    target_weight: '',
+    allergies: ''
   });
 
   const totalSteps = 3;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -94,7 +94,8 @@ export const Onboarding: React.FC = () => {
         goal_calories: tdee,
         goal_protein: goalProtein,
         goal_carbs: Math.round(tdee * 0.45),
-        goal_fats: Math.round(tdee * 0.25)
+        goal_fats: Math.round(tdee * 0.25),
+        allergies: formData.allergies.trim()
       });
 
       // Create user goal
@@ -124,7 +125,7 @@ export const Onboarding: React.FC = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <LoadingSpinner />
-          <p className="mt-4 text-gray-400">Setting up your account...</p>
+          <p className="mt-4 text-slate-400">Setting up your account...</p>
         </div>
       </div>
     );
@@ -155,14 +156,14 @@ export const Onboarding: React.FC = () => {
             {currentStep === 2 && "Let's Get Personal"}
             {currentStep === 3 && 'Set Your Goals'}
           </h1>
-          <p className="text-gray-400">
+          <p className="text-slate-400">
             Step {currentStep} of {totalSteps}
           </p>
         </div>
 
         {/* Progress Bar */}
         <div className="mb-8">
-          <div className="w-full bg-gray-800 rounded-full h-2">
+          <div className="w-full bg-slate-800 rounded-full h-2">
             <div 
               className="bg-gradient-to-r from-primary-600 to-primary-700 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(currentStep / totalSteps) * 100}%` }}
@@ -171,10 +172,10 @@ export const Onboarding: React.FC = () => {
         </div>
 
         {/* Form Card */}
-        <div className="bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-800 p-8">
+        <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-800 p-8">
           {currentStep === 1 && (
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2.5">
+              <label className="block text-sm font-semibold text-slate-300 mb-2.5">
                 What's your full name?
               </label>
               <input
@@ -182,7 +183,7 @@ export const Onboarding: React.FC = () => {
                 name="full_name"
                 value={formData.full_name}
                 onChange={handleInputChange}
-                className="w-full px-5 py-3.5 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-gray-500 hover:border-gray-600"
+                className="w-full px-5 py-3.5 bg-slate-800/50 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-500 hover:border-slate-600"
                 placeholder="John Doe"
                 required
               />
@@ -192,20 +193,20 @@ export const Onboarding: React.FC = () => {
           {currentStep === 2 && (
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2.5">Age</label>
+                <label className="block text-sm font-semibold text-slate-300 mb-2.5">Age</label>
                 <input
                   type="number"
                   name="age"
                   value={formData.age}
                   onChange={handleInputChange}
-                  className="w-full px-5 py-3.5 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-gray-500 hover:border-gray-600"
+                  className="w-full px-5 py-3.5 bg-slate-800/50 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-500 hover:border-slate-600"
                   placeholder="25"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2.5">Gender</label>
+                <label className="block text-sm font-semibold text-slate-300 mb-2.5">Gender</label>
                 <select
                   name="gender"
                   value={formData.gender}
@@ -222,26 +223,26 @@ export const Onboarding: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2.5">Height (cm)</label>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2.5">Height (cm)</label>
                   <input
                     type="number"
                     name="height"
                     value={formData.height}
                     onChange={handleInputChange}
-                    className="w-full px-5 py-3.5 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-gray-500 hover:border-gray-600"
+                    className="w-full px-5 py-3.5 bg-slate-800/50 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-500 hover:border-slate-600"
                     placeholder="170"
                     required
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2.5">Weight (kg)</label>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2.5">Weight (kg)</label>
                   <input
                     type="number"
                     name="weight"
                     value={formData.weight}
                     onChange={handleInputChange}
-                    className="w-full px-5 py-3.5 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-gray-500 hover:border-gray-600"
+                    className="w-full px-5 py-3.5 bg-slate-800/50 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-500 hover:border-slate-600"
                     placeholder="70"
                     required
                   />
@@ -249,7 +250,7 @@ export const Onboarding: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2.5">Activity Level</label>
+                <label className="block text-sm font-semibold text-slate-300 mb-2.5">Activity Level</label>
                 <select
                   name="activity_level"
                   value={formData.activity_level}
@@ -264,13 +265,30 @@ export const Onboarding: React.FC = () => {
                   <option value="very_active">Very Active (physical job + exercise)</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2.5">
+                  Allergies & Dietary Restrictions (Optional)
+                </label>
+                <textarea
+                  name="allergies"
+                  value={formData.allergies}
+                  onChange={handleInputChange}
+                  className="w-full px-5 py-3.5 bg-slate-800/50 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-500 hover:border-slate-600 resize-none"
+                  placeholder="e.g., Peanuts, Dairy, Gluten, Shellfish..."
+                  rows={3}
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  List any food allergies or dietary restrictions separated by commas
+                </p>
+              </div>
             </div>
           )}
 
           {currentStep === 3 && (
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2.5">Fitness Goal</label>
+                <label className="block text-sm font-semibold text-slate-300 mb-2.5">Fitness Goal</label>
                 <select
                   name="goal_type"
                   value={formData.goal_type}
@@ -287,7 +305,7 @@ export const Onboarding: React.FC = () => {
 
               {formData.goal_type !== 'maintenance' && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2.5">
+                  <label className="block text-sm font-semibold text-slate-300 mb-2.5">
                     Target Weight (kg)
                   </label>
                   <input
@@ -295,7 +313,7 @@ export const Onboarding: React.FC = () => {
                     name="target_weight"
                     value={formData.target_weight}
                     onChange={handleInputChange}
-                    className="w-full px-5 py-3.5 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-gray-500 hover:border-gray-600"
+                    className="w-full px-5 py-3.5 bg-slate-800/50 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-500 hover:border-slate-600"
                     placeholder={formData.weight || "70"}
                     required
                   />
@@ -315,7 +333,7 @@ export const Onboarding: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setCurrentStep(prev => prev - 1)}
-                className="flex-1 py-3.5 border-2 border-gray-700 text-gray-300 rounded-xl hover:border-gray-600 hover:text-white transition-all font-semibold"
+                className="flex-1 py-3.5 border-2 border-slate-700 text-slate-300 rounded-xl hover:border-slate-600 hover:text-white transition-all font-semibold"
               >
                 Back
               </button>

@@ -19,7 +19,7 @@ export const Register: React.FC = () => {
       return;
     }
 
-    const { data, error } = await supabase.auth.signUp({ 
+    const { error } = await supabase.auth.signUp({ 
       email, 
       password,
       options: {
@@ -56,10 +56,10 @@ export const Register: React.FC = () => {
             <span className="text-5xl">🍽️</span>
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">Get Started</h1>
-          <p className="text-gray-400">Create your MindMeal account</p>
+          <p className="text-slate-400">Create your MindMeal account</p>
         </div>
 
-        <div className="bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-800 p-8">
+        <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-800 p-8">
           {message ? (
             <div className="text-center py-8">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/20 rounded-full mb-4">
@@ -68,24 +68,24 @@ export const Register: React.FC = () => {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-white mb-2">Success!</h3>
-              <p className="text-gray-300 mb-4">{message}</p>
+              <p className="text-slate-300 mb-4">{message}</p>
             </div>
           ) : (
             <form onSubmit={handleRegister}>
               <div className="mb-5">
-                <label className="block text-sm font-semibold text-gray-300 mb-2.5">Email Address</label>
+                <label className="block text-sm font-semibold text-slate-300 mb-2.5">Email Address</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full px-5 py-3.5 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-gray-500 hover:border-gray-600"
+                  className="w-full px-5 py-3.5 bg-slate-800/50 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-500 hover:border-slate-600"
                   placeholder="you@example.com"
                 />
               </div>
               
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-300 mb-2.5">
+                <label className="block text-sm font-semibold text-slate-300 mb-2.5">
                   Password (min 6 characters)
                 </label>
                 <input
@@ -93,10 +93,10 @@ export const Register: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full px-5 py-3.5 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-gray-500 hover:border-gray-600"
+                  className="w-full px-5 py-3.5 bg-slate-800/50 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-500 hover:border-slate-600"
                   placeholder="••••••••"
                 />
-                <p className="text-xs text-gray-500 mt-2">Use at least 6 characters for your password</p>
+                <p className="text-xs text-slate-500 mt-2">Use at least 6 characters for your password</p>
               </div>
 
               <button
@@ -116,7 +116,7 @@ export const Register: React.FC = () => {
 
           {!message && (
             <div className="mt-6 text-center">
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-slate-400">
                 Already have an account?{' '}
                 <a href="/login" className="text-primary-500 hover:text-primary-400 font-semibold transition-colors">
                   Sign in

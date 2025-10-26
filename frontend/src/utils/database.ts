@@ -9,6 +9,7 @@ export interface Profile {
   goal_protein: number;
   goal_carbs: number;
   goal_fats: number;
+  allergies: string;
   created_at: string;
   updated_at: string;
 }
@@ -145,6 +146,17 @@ export type NewMeal = {
 };
 
 export const addMeal = async (meal: NewMeal) => {
+  console.log('Attempting to add meal:', meal);
+  
+  // Check if user is authenticated
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    console.error('No authenticated session found');
+    throw new Error('User not authenticated');
+  }
+  
+  console.log('User authenticated:', session.user.id);
+  
   // Assuming your table is named 'meals'
   const { data, error } = await supabase
     .from('meals')
@@ -152,10 +164,17 @@ export const addMeal = async (meal: NewMeal) => {
     .select();
 
   if (error) {
-    console.error('Error adding meal:', error.message);
-    throw new Error(error.message);
+    console.error('Error adding meal:', error);
+    console.error('Error details:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
+    throw new Error(`Failed to add meal: ${error.message}`);
   }
 
+  console.log('Meal added successfully:', data);
   return data;
 };
 
@@ -220,6 +239,20 @@ export const addRecipe = async (recipe: Omit<Recipe, 'id' | 'created_at' | 'upda
   return data;
 };
 
+export const deleteRecipe = async (recipeId: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('recipes')
+    .delete()
+    .eq('id', recipeId);
+
+  if (error) {
+    console.error('Error deleting recipe:', error);
+    return false;
+  }
+
+  return true;
+};
+
 // User goals operations
 export const getUserGoals = async (userId: string): Promise<UserGoal[]> => {
   const { data, error } = await supabase
@@ -277,7 +310,7 @@ export const calculateDayStreak = (meals: Meal[]): number => {
   const today = new Date().toISOString().split('T')[0];
   
   for (let i = 0; i < dates.length; i++) {
-    const currentDate = new Date(dates[i]);
+    // const currentDate = new Date(dates[i]);
     const expectedDate = new Date(today);
     expectedDate.setDate(expectedDate.getDate() - i);
     const expectedDateStr = expectedDate.toISOString().split('T')[0];

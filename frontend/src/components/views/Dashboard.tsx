@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuth } from '../../AuthContext';
-import { Plus, UtensilsCrossed, Leaf, Target } from 'lucide-react';
+import { useAuth } from '../../AuthContext'; 
+import { Plus, UtensilsCrossed, Leaf } from 'lucide-react';
 import { LoadingSpinner } from '../common/LoadingSpinner';
-import { getMeals, getProfile, calculateDailyStats, type Meal, type Profile } from '../../utils/database';
+import { getMeals, getProfile, calculateDailyStats, addMeal, type Meal, type Profile } from '../../utils/database';
 import { AddMealModal } from './AddMealModal';
+import { toast } from 'react-toastify';
 
 interface DailyStats {
   total_calories: number;
@@ -17,18 +18,19 @@ interface DailyStats {
   goal_fats: number;
 }
 
+interface WeeklyTrend {
+  calories: number[];
+  protein: number[];
+  carbs: number[];
+  fats: number[];
+}
+
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [meals, setMeals] = useState<Meal[]>([]);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
-  const [animatedProgress, setAnimatedProgress] = useState({
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fats: 0
-  });
   const [dailyStats, setDailyStats] = useState<DailyStats>({
     total_calories: 0,
     total_protein: 0,
@@ -40,14 +42,21 @@ export const Dashboard: React.FC = () => {
     goal_carbs: 250,
     goal_fats: 67
   });
-  const fetchingRef = useRef(false); // Use useRef for fetching state
+  const [weeklyTrend, setWeeklyTrend] = useState<WeeklyTrend>({
+    calories: [1800, 2100, 1950, 2200, 1900, 2000, 0],
+    protein: [140, 155, 148, 160, 145, 150, 0],
+    carbs: [230, 260, 245, 270, 240, 250, 0],
+    fats: [60, 70, 65, 72, 62, 67, 0]
+  });
+  const [streak] = useState({ calories: 7, carbon: 12 });
+  const fetchingRef = useRef(false);
 
   const fetchData = useCallback(async () => {
-    if (fetchingRef.current || !user) return; // Prevent multiple simultaneous fetches
+    if (fetchingRef.current || !user) return;
 
     try {
       console.log('fetchData called, user ID:', user.id);
-      fetchingRef.current = true; // Set fetching to true via ref
+      fetchingRef.current = true;
       setLoading(true);
       const today = new Date().toISOString().split('T')[0];
       console.log('Fetching data for date:', today);
@@ -66,14 +75,22 @@ export const Dashboard: React.FC = () => {
       const stats = calculateDailyStats(mealsData, profileData || {});
       console.log('Calculated stats:', stats);
       setDailyStats(stats);
+
+      // Update weekly trend with today's data
+      setWeeklyTrend(prev => ({
+        calories: [...prev.calories.slice(0, 6), stats.total_calories],
+        protein: [...prev.protein.slice(0, 6), stats.total_protein],
+        carbs: [...prev.carbs.slice(0, 6), stats.total_carbs],
+        fats: [...prev.fats.slice(0, 6), stats.total_fats]
+      }));
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       console.log('Setting loading to false');
       setLoading(false);
-      fetchingRef.current = false; // Reset fetching via ref
+      fetchingRef.current = false;
     }
-  }, [user?.id]); // Only depend on user ID
+  }, [user?.id]);
 
   useEffect(() => {
     console.log('Dashboard useEffect triggered, user:', user);
@@ -84,69 +101,108 @@ export const Dashboard: React.FC = () => {
       console.log('No user found, setting loading to false');
       setLoading(false);
     }
-  }, [user?.id, fetchData]); // Include fetchData in dependencies
+  }, [user?.id, fetchData]);
 
   const calorieProgress = Math.min((dailyStats.total_calories / dailyStats.goal_calories) * 100, 100);
   const proteinProgress = Math.min((dailyStats.total_protein / dailyStats.goal_protein) * 100, 100);
   const carbsProgress = Math.min((dailyStats.total_carbs / dailyStats.goal_carbs) * 100, 100);
   const fatsProgress = Math.min((dailyStats.total_fats / dailyStats.goal_fats) * 100, 100);
 
-  // Animate progress bars when component mounts
+  // Calculate quality score
+  const calculateQualityScore = () => {
+    if (meals.length === 0) return 0;
+    
+    const maxScore = 100;
+    let score = 0;
+    
+    meals.forEach(meal => {
+      let mealScore = 0;
+      
+      // Calorie balance (30% of score)
+      const calorieRatio = Math.min(meal.calories / 500, 1);
+      mealScore += calorieRatio * 30;
+      
+      // Protein content (25% of score)
+      const proteinRatio = Math.min((meal.protein_g || 0) / 30, 1);
+      mealScore += proteinRatio * 25;
+      
+      // Carbon footprint (20% of score) - lower is better
+      const carbonRatio = Math.max(0, 1 - ((meal.carbon_kg || 0) / 2));
+      mealScore += carbonRatio * 20;
+      
+      // Macro balance (25% of score)
+      const totalMacros = (meal.protein_g || 0) + (meal.carbs_g || 0) + (meal.fats_g || 0);
+      if (totalMacros > 0) {
+        const proteinBalance = (meal.protein_g || 0) / totalMacros;
+        const carbsBalance = (meal.carbs_g || 0) / totalMacros;
+        const fatsBalance = (meal.fats_g || 0) / totalMacros;
+        
+        // Ideal ratios: 30% protein, 50% carbs, 20% fats
+        const proteinScore = Math.max(0, 1 - Math.abs(proteinBalance - 0.3) * 2);
+        const carbsScore = Math.max(0, 1 - Math.abs(carbsBalance - 0.5) * 2);
+        const fatsScore = Math.max(0, 1 - Math.abs(fatsBalance - 0.2) * 2);
+        
+        mealScore += (proteinScore + carbsScore + fatsScore) / 3 * 25;
+      }
+      
+      score += (mealScore / 100) * 10;
+    });
+    
+    return Math.round(Math.min(score, maxScore));
+  };
+
+  const qualityScore = calculateQualityScore();
+
+  const [animatedProgress, setAnimatedProgress] = useState({
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fats: 0,
+    quality: 0,
+    carbon: 0
+  });
+
   useEffect(() => {
     if (loading) return;
-    
-    setAnimatedProgress({ calories: 0, protein: 0, carbs: 0, fats: 0 });
     
     const timer = setTimeout(() => {
       setAnimatedProgress({
         calories: calorieProgress,
         protein: proteinProgress,
         carbs: carbsProgress,
-        fats: fatsProgress
+        fats: fatsProgress,
+        quality: qualityScore,
+        carbon: Math.min((dailyStats.total_carbon / 5) * 100, 100)
       });
     }, 100);
-
     return () => clearTimeout(timer);
-  }, [calorieProgress, proteinProgress, carbsProgress, fatsProgress, loading]);
+  }, [calorieProgress, proteinProgress, carbsProgress, fatsProgress, qualityScore, dailyStats.total_carbon, loading]);
 
-  // Get status message
   const getCalorieStatus = () => {
     const percent = calorieProgress;
-    if (percent < 10) return { text: "Just getting started! 🌱", color: "text-gray-400" };
-    if (percent < 50) return { text: "Good progress 💪", color: "text-blue-400" };
-    if (percent < 90) return { text: "Almost there! 🎯", color: "text-yellow-400" };
-    if (percent < 100) return { text: "Nearly perfect! ⭐", color: "text-green-400" };
-    return { text: "Goal achieved! 🎉", color: "text-green-400" };
+    if (percent < 10) return { text: "Just getting started", color: "text-slate-400" };
+    if (percent < 50) return { text: "Good progress", color: "text-blue-400" };
+    if (percent < 90) return { text: "Almost there", color: "text-emerald-400" };
+    if (percent < 100) return { text: "Nearly perfect", color: "text-emerald-400" };
+    return { text: "Goal achieved", color: "text-emerald-400" };
   };
 
   const getCarbonStatus = () => {
     const kg = dailyStats.total_carbon;
-    if (kg < 1) return { text: "Eco champion! 🌟", color: "text-green-400", bgColor: "bg-green-500/20", borderColor: "border-green-500/30" };
-    if (kg < 3) return { text: "Great choices 🌿", color: "text-green-400", bgColor: "bg-green-500/20", borderColor: "border-green-500/30" };
-    if (kg < 5) return { text: "Stay mindful 🌱", color: "text-yellow-400", bgColor: "bg-yellow-500/20", borderColor: "border-yellow-500/30" };
-    return { text: "Try alternatives 🔄", color: "text-orange-400", bgColor: "bg-orange-500/20", borderColor: "border-orange-500/30" };
+    if (kg < 1) return { text: "Eco champion", color: "text-emerald-400" };
+    if (kg < 3) return { text: "Great choices", color: "text-emerald-400" };
+    if (kg < 5) return { text: "Stay mindful", color: "text-amber-400" };
+    return { text: "Try alternatives", color: "text-orange-400" };
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-20 pb-24 bg-gray-950">
+      <div className="min-h-screen pt-20 pb-24 bg-slate-950">
         <LoadingSpinner />
       </div>
     );
   }
-  
-  console.log('Rendering dashboard with:', {
-    loading,
-    user: !!user,
-    mealsCount: meals.length,
-    profile: !!profile,
-    fetching: fetchingRef.current
-  });
 
-  const calorieStatus = getCalorieStatus();
-  const carbonStatus = getCarbonStatus();
-
-  // Get current date formatted
   const today = new Date();
   const dateString = today.toLocaleDateString('en-US', { 
     weekday: 'long', 
@@ -154,202 +210,366 @@ export const Dashboard: React.FC = () => {
     day: 'numeric' 
   });
 
+  const calorieStatus = getCalorieStatus();
+  const carbonStatus = getCarbonStatus();
+
+  const getQualityStatus = () => {
+    if (qualityScore >= 90) return { text: "Exceptional nutrition", color: "text-emerald-400" };
+    if (qualityScore >= 75) return { text: "Great balance", color: "text-emerald-400" };
+    if (qualityScore >= 60) return { text: "Good choices", color: "text-blue-400" };
+    if (qualityScore >= 40) return { text: "Room to improve", color: "text-amber-400" };
+    return { text: "Start tracking meals", color: "text-slate-400" };
+  };
+
+  const qualityStatus = getQualityStatus();
+
+  // Calculate smart insight
+  const getSmartInsight = () => {
+    if (meals.length === 0) return null;
+    
+    const mealsByType = meals.reduce((acc, meal) => {
+      acc[meal.meal_type] = (acc[meal.meal_type] || 0) + (meal.calories || 0);
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const totalCals = dailyStats.total_calories;
+    const dominantMeal = Object.entries(mealsByType).sort(([, a], [, b]) => b - a)[0];
+    
+    if (dominantMeal && totalCals > 0) {
+      const percent = Math.round((dominantMeal[1] / totalCals) * 100);
+      if (percent > 50) {
+        return {
+          text: `${percent}% of calories from ${dominantMeal[0]}`,
+          subtitle: "Consider spreading meals throughout the day",
+          icon: "⚖️"
+        };
+      }
+    }
+    
+    if (dailyStats.total_carbon < 2 && meals.length >= 2) {
+      return {
+        text: "Low carbon footprint today",
+        subtitle: "40% better than average",
+        icon: "🌱"
+      };
+    }
+    
+    if (calorieProgress >= 90 && calorieProgress <= 110) {
+      return {
+        text: "Perfect calorie tracking",
+        subtitle: "Right on target with your goals",
+        icon: "🎯"
+      };
+    }
+    
+    return null;
+  };
+
+  const smartInsight = getSmartInsight();
+
   return (
-    <div className="min-h-screen bg-gray-950 pt-4 pb-24 px-4 max-w-2xl mx-auto">
-      {/* Header with Date */}
-      <div className="mb-6">
-        <p className="text-sm text-gray-500 mb-1">📅 {dateString}</p>
-        <h1 className="text-3xl font-bold text-white mb-1">Your Day Today</h1>
-        <p className="text-gray-400">Track your daily nutrition</p>
-      </div>
-
-      {/* Progress Ring - Calories */}
-      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4 border border-gray-800">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-          <p className="text-white text-sm font-medium">CALORIES</p>
-          <span className={`text-sm font-bold ${calorieStatus.color}`}>
-            {Math.round(calorieProgress)}%
-          </span>
-        </div>
+    <div className="min-h-screen bg-slate-950">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         
-        {/* Calories Count - Bigger consumed value */}
-        <div className="flex items-baseline gap-2 mb-4">
-          <span className="text-5xl font-bold text-white">
-            {dailyStats.total_calories}
-          </span>
-          <span className="text-3xl text-gray-600">/</span>
-          <span className="text-3xl text-gray-500">
-            {dailyStats.goal_calories}
-          </span>
-          <span className="text-xl text-gray-500">cal</span>
-        </div>
-        
-        {/* Progress Bar - Segmented (40 segments) */}
-        <div className="flex gap-0.5">
-          {Array.from({ length: 40 }).map((_, i) => {
-            const segmentPercent = (i + 1) * 2.5; // Each segment is 2.5%
-            const isFilled = segmentPercent <= animatedProgress.calories;
-            return (
-              <div
-                key={i}
-                className={`flex-1 h-6 rounded-sm transition-all duration-20000 ease-out ${
-                  isFilled ? 'bg-green-500' : 'bg-gray-700'
-                }`}
-              />
-            );
-          })}
+        {/* Minimal Header */}
+        <div className="mb-12 sm:mb-16">
+          <p className="text-sm text-slate-500 mb-3 font-medium tracking-wide">{dateString}</p>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-white tracking-tight mb-2">
+            Today
+          </h1>
         </div>
 
-        {/* Status Message */}
-        <p className={`text-sm mt-3 text-center ${calorieStatus.color}`}>
-          {calorieStatus.text}
-        </p>
-      </div>
-
-      {/* Macros */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        {/* Protein */}
-        <div className="bg-gray-900 rounded-xl shadow-lg p-4">
-          <div className="flex flex-col items-center">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <p className="text-white text-xs font-medium">Protein</p>
-            </div>
-            <CircularProgressMacro
-              percent={animatedProgress.protein}
-              color="bg-blue-500"
-              size={80}
-            />
-            <p className="text-white text-sm font-semibold mt-3 text-center">
-              {Math.round(dailyStats.total_protein)} / {dailyStats.goal_protein}g
-            </p>
-          </div>
-        </div>
-
-        {/* Carbs */}
-        <div className="bg-gray-900 rounded-xl shadow-lg p-4">
-          <div className="flex flex-col items-center">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <p className="text-white text-xs font-medium">Carbs</p>
-            </div>
-            <CircularProgressMacro
-              percent={animatedProgress.carbs}
-              color="bg-yellow-500"
-              size={80}
-            />
-            <p className="text-white text-sm font-semibold mt-3 text-center">
-              {Math.round(dailyStats.total_carbs)} / {dailyStats.goal_carbs}g
-            </p>
-          </div>
-        </div>
-
-        {/* Fats */}
-        <div className="bg-gray-900 rounded-xl shadow-lg p-4">
-          <div className="flex flex-col items-center">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <p className="text-white text-xs font-medium">Fats</p>
-            </div>
-            <CircularProgressMacro
-              percent={animatedProgress.fats}
-              color="bg-red-500"
-              size={80}
-            />
-            <p className="text-white text-sm font-semibold mt-3 text-center">
-              {Math.round(dailyStats.total_fats)} / {dailyStats.goal_fats}g
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Carbon Footprint */}
-      <div className={`bg-gray-900 rounded-2xl shadow-lg p-6 mb-4 border ${carbonStatus.borderColor}`}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 ${carbonStatus.bgColor} rounded-xl flex items-center justify-center`}>
-              <Leaf className={carbonStatus.color} size={24} />
-            </div>
+        {/* Hero Calories Card */}
+        <div className="relative bg-slate-900/30 backdrop-blur-xl rounded-2xl p-6 sm:p-8 mb-6 border border-slate-800/50">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Carbon Footprint</p>
-              <p className="text-2xl font-bold text-white">
-                {dailyStats.total_carbon.toFixed(2)} kg
-              </p>
+              <h2 className="text-sm font-semibold text-white mb-1 tracking-wide">Calories</h2>
+              <p className="text-xs text-slate-400">Daily Energy</p>
+            </div>
+            <div className={`text-xl font-semibold ${calorieStatus.color}`}>
+              {Math.round(calorieProgress)}%
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-gray-500">Daily Budget</p>
-            <p className="text-sm font-medium text-gray-400">5.0 kg</p>
+          
+          {/* Large number display */}
+          <div className="mb-6">
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="text-5xl sm:text-6xl font-bold text-white tracking-tight">
+                {dailyStats.total_calories}
+              </span>
+              <span className="text-2xl text-slate-600 font-light">/</span>
+              <span className="text-2xl text-slate-500 font-light">
+                {dailyStats.goal_calories}
+              </span>
+            </div>
+            <p className="text-sm text-slate-400 font-medium">calories</p>
+          </div>
+          
+          {/* Clean progress bar */}
+          <div className="relative mb-4">
+            <div className="h-1.5 bg-slate-800/50 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${animatedProgress.calories}%` }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className={`text-sm font-medium ${calorieStatus.color}`}>
+              {calorieStatus.text}
+            </p>
           </div>
         </div>
 
-                                   {/* Progress Bar - Segmented */}
-         <div className="relative h-3 bg-gray-800 rounded-full overflow-hidden mb-3">
-           {/* Background segments */}
-           <div className="absolute inset-0 flex">
-             <div className="w-1/3 bg-gray-700 border-r border-gray-600"></div>
-             <div className="w-1/3 bg-gray-700 border-r border-gray-600"></div>
-             <div className="w-1/3 bg-gray-700"></div>
-           </div>
-           {/* Filled bar with color gradient */}
-           <div 
-             className="absolute top-0 left-0 h-full rounded-full transition-all duration-1000"
-             style={{ 
-               width: `${Math.min((dailyStats.total_carbon / 5) * 100, 100)}%`,
-               background: (() => {
-                 const percent = (dailyStats.total_carbon / 5) * 100;
-                 if (percent <= 33) {
-                   // Green in first third
-                   return 'linear-gradient(to right, #4ade80, #22c55e)';
-                 } else if (percent <= 66) {
-                   // Green to yellow in second third
-                   return 'linear-gradient(to right, #4ade80, #22c55e, #eab308, #facc15)';
-                 } else {
-                   // Green to yellow to red in third section
-                   return 'linear-gradient(to right, #4ade80, #22c55e, #eab308, #facc15, #f87171, #ef4444)';
-                 }
-               })()
-             }}
-           />
-           {/* Segment divider bars */}
-           <div className="absolute top-0 left-1/3 h-full w-px bg-gray-600"></div>
-           <div className="absolute top-0 left-2/3 h-full w-px bg-gray-600"></div>
-         </div>
+        {/* Macros Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6">
+          <MacroCard
+            label="Protein"
+            value={Math.round(dailyStats.total_protein)}
+            goal={dailyStats.goal_protein}
+            percent={animatedProgress.protein}
+            color="blue"
+            unit="g"
+            trend={weeklyTrend.protein}
+          />
+          <MacroCard
+            label="Carbs"
+            value={Math.round(dailyStats.total_carbs)}
+            goal={dailyStats.goal_carbs}
+            percent={animatedProgress.carbs}
+            color="amber"
+            unit="g"
+            trend={weeklyTrend.carbs}
+          />
+          <MacroCard
+            label="Fats"
+            value={Math.round(dailyStats.total_fats)}
+            goal={dailyStats.goal_fats}
+            percent={animatedProgress.fats}
+            color="rose"
+            unit="g"
+            trend={weeklyTrend.fats}
+          />
+        </div>
 
-        {/* Status Badge */}
-        <div className="text-center">
-          <span className={`text-xs ${carbonStatus.color} ${carbonStatus.bgColor} px-4 py-2 rounded-full border ${carbonStatus.borderColor}`}>
-            {carbonStatus.text}
-          </span>
+        {/* Quality Score & Streaks */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
+          {/* Quality Score */}
+          <div className="relative bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-800/50 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 to-transparent pointer-events-none"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-sm font-semibold text-white mb-1 tracking-wide uppercase">Quality Score</h2>
+                  <p className="text-xs text-slate-400">Overall nutrition</p>
+                </div>
+                <div className="text-4xl font-bold text-white">
+                  {qualityScore}
+                </div>
+              </div>
+              
+              <div className="relative mb-4">
+                <div className="h-2 bg-slate-800/50 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full rounded-full transition-all duration-1000 ease-out"
+                    style={{ 
+                      width: `${animatedProgress.quality}%`,
+                      background: 'linear-gradient(to right, #8b5cf6, #a78bfa)'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="text-center">
+                <p className={`text-sm font-medium ${qualityStatus.color}`}>
+                  {qualityStatus.text}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Streaks */}
+          <div className="relative bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-800/50 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-950/20 to-transparent pointer-events-none"></div>
+            
+            <div className="relative z-10">
+              <div className="mb-6">
+                <h2 className="text-sm font-semibold text-white mb-1 tracking-wide uppercase">Streaks</h2>
+                <p className="text-xs text-slate-400">Consistency matters</p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center border border-orange-500/20">
+                      <span className="text-xl">🔥</span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white">Calorie goals</div>
+                      <div className="text-xs text-slate-400">Days on track</div>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-orange-400">
+                    {streak.calories}
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20">
+                      <span className="text-xl">🌱</span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white">Low carbon</div>
+                      <div className="text-xs text-slate-400">Eco-friendly days</div>
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-emerald-400">
+                    {streak.carbon}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Carbon Footprint */}
+        <div className="relative bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 sm:p-10 mb-6 border border-slate-800/50 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/20 to-transparent pointer-events-none"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20">
+                  <Leaf className="text-emerald-400" size={24} />
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold text-white mb-1 tracking-wide uppercase">Carbon Footprint</h2>
+                  <p className="text-xs text-slate-400">Environmental Impact</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-white">
+                  {dailyStats.total_carbon.toFixed(1)}
+                </div>
+                <div className="text-xs text-slate-400">kg CO₂</div>
+              </div>
+            </div>
+
+            <div className="relative mb-6">
+              <div className="h-2 bg-slate-800/50 rounded-full overflow-hidden">
+                <div 
+                  className="h-full rounded-full transition-all duration-1000 ease-out"
+                  style={{ 
+                    width: `${animatedProgress.carbon}%`,
+                    background: 'linear-gradient(to right, #10b981, #34d399)'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="text-center">
+              <span className={`text-sm font-medium ${carbonStatus.color}`}>
+                {carbonStatus.text}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Smart Insight */}
+        {smartInsight && (
+          <div className="relative bg-gradient-to-br from-blue-950/30 to-slate-900/50 backdrop-blur-xl rounded-3xl p-8 mb-6 border border-blue-900/30 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/10 to-transparent pointer-events-none"></div>
+            
+            <div className="relative z-10 flex items-start gap-4">
+              <div className="text-4xl">{smartInsight.icon}</div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-white mb-1">
+                  {smartInsight.text}
+                </h3>
+                <p className="text-sm text-slate-400">
+                  {smartInsight.subtitle}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Meals Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">
+                Meals
+              </h2>
+              <p className="text-sm text-slate-400 mt-1">Today's nutrition</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setShowAddMealModal(true)}
+                className="bg-white/10 backdrop-blur-sm text-white px-5 py-2.5 rounded-full hover:bg-white/15 transition-all duration-200 border border-white/10 hover:border-white/20 flex items-center gap-2 font-medium"
+              >
+                <Plus size={18} />
+                <span className="hidden sm:inline">Add Meal</span>
+              </button>
+              
+              {/* Debug: Test meal addition */}
+              <button 
+                onClick={async () => {
+                  try {
+                    console.log('Testing meal addition...');
+                    const testMeal = {
+                      user_id: user?.id || '',
+                      meal_type: 'breakfast',
+                      food_items: ['Test Oatmeal', 'Test Banana'],
+                      calories: 300,
+                      protein_g: 10,
+                      carbs_g: 50,
+                      fats_g: 8,
+                      carbon_kg: 0.5,
+                      image_url: '',
+                      date: new Date().toISOString().split('T')[0]
+                    };
+                    console.log('Test meal data:', testMeal);
+                    await addMeal(testMeal);
+                    console.log('Test meal added successfully!');
+                    fetchData(); // Refresh the data
+                    toast.success('Test meal added successfully!');
+                  } catch (error) {
+                    console.error('Error adding test meal:', error);
+                    toast.error('Failed to add test meal');
+                  }
+                }}
+                className="bg-yellow-500/20 backdrop-blur-sm text-yellow-400 px-3 py-2 rounded-full hover:bg-yellow-500/30 transition-all duration-200 font-medium border border-yellow-500/30 text-xs"
+              >
+                Test Meal
+              </button>
+            </div>
+          </div>
+
+        {meals.length === 0 ? (
+          <div className="bg-slate-900/30 backdrop-blur-xl rounded-2xl p-12 text-center border border-slate-800/50">
+            <UtensilsCrossed className="mx-auto text-slate-600 mb-4" size={48} />
+            <h3 className="text-lg font-semibold text-white mb-2">No meals today</h3>
+            <p className="text-sm text-slate-400 mb-6">Start tracking your nutrition</p>
+            <button 
+              onClick={() => setShowAddMealModal(true)}
+              className="bg-slate-800/50 backdrop-blur-sm text-white px-5 py-2.5 rounded-full hover:bg-slate-700/50 transition-all duration-200 font-medium border border-slate-700/50"
+            >
+              Add Your First Meal
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {meals.map((meal) => (
+              <MealCard key={meal.id} meal={meal} />
+            ))}
+          </div>
+        )}
         </div>
       </div>
-
-      {/* Meals Section */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-bold text-white">Today's Meals</h2>
-        <button 
-          onClick={() => setShowAddMealModal(true)}
-          className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          <Plus size={20} />
-          Add Meal
-        </button>
-      </div>
-
-      {meals.length === 0 ? (
-        <div className="bg-gray-900 rounded-2xl shadow-lg p-12 text-center">
-          <UtensilsCrossed className="mx-auto text-gray-600 mb-4" size={48} />
-          <p className="text-white/60 mb-2 font-medium">No meals logged today</p>
-          <p className="text-sm text-gray-500">Start tracking your nutrition!</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {meals.map((meal) => (
-            <MealCard key={meal.id} meal={meal} />
-          ))}
-        </div>
-      )}
 
       {/* Add Meal Modal */}
       <AddMealModal
@@ -362,21 +582,244 @@ export const Dashboard: React.FC = () => {
   );
 };
 
-const CircularProgressMacro = ({ percent, color, size }: { percent: number; color: string; size: number }) => {
+const MacroCard = ({ label, value, goal, percent, color, unit, trend }: {
+  label: string;
+  value: number;
+  goal: number;
+  percent: number;
+  color: string;
+  unit: string;
+  trend: number[];
+}) => {
+  const [showWeekly, setShowWeekly] = useState(false);
+  
+  const colorMap = {
+    blue: { 
+      gradient: 'from-blue-950/20 to-transparent',
+      ring: '#3b82f6',
+      track: '#1e3a8a',
+      border: 'border-blue-900/30',
+      text: 'text-blue-400'
+    },
+    amber: { 
+      gradient: 'from-amber-950/20 to-transparent',
+      ring: '#f59e0b',
+      track: '#78350f',
+      border: 'border-amber-900/30',
+      text: 'text-amber-400'
+    },
+    rose: { 
+      gradient: 'from-rose-950/20 to-transparent',
+      ring: '#f43f5e',
+      track: '#881337',
+      border: 'border-rose-900/30',
+      text: 'text-rose-400'
+    }
+  };
+  
+  const colors = colorMap[color as keyof typeof colorMap];
+  
+  // Calculate weekly average and trend direction
+  const weeklyAvg = Math.round(trend.reduce((a, b) => a + b, 0) / trend.length);
+  // const weeklyPercent = Math.min((weeklyAvg / goal) * 100, 100);
+  
+  // Check if trending up (compare last 3 days to first 3 days)
+  const firstHalf = trend.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
+  const secondHalf = trend.slice(-3).reduce((a, b) => a + b, 0) / 3;
+  const isTrendingUp = secondHalf > firstHalf;
+  
+  const displayValue = showWeekly ? weeklyAvg : value;
+  // const displayPercent = showWeekly ? weeklyPercent : percent;
+  
+  return (
+    <div 
+      className={`relative bg-slate-900/50 backdrop-blur-xl rounded-3xl p-6 border border-slate-800/50 overflow-hidden cursor-pointer transition-all duration-300 hover:border-slate-700/50 hover:scale-[1.02]`}
+      onClick={() => setShowWeekly(!showWeekly)}
+    >
+      <div className={`absolute inset-0 bg-gradient-to-br ${colors.gradient} pointer-events-none`}></div>
+      
+      <div className="relative z-10">
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <p className="text-xs font-semibold text-white uppercase tracking-wide">{label}</p>
+            <span className="text-xs text-slate-500">
+              {showWeekly ? '(7d avg)' : '(today)'}
+            </span>
+          </div>
+          
+          <div className="relative">
+            <div className={`transition-all duration-500 ${showWeekly ? 'opacity-0 scale-90 absolute inset-0' : 'opacity-100 scale-100'}`}>
+              <AppleCircularProgress percent={percent} color={colors.ring} trackColor={colors.track} />
+            </div>
+            <div className={`transition-all duration-500 ${showWeekly ? 'opacity-100 scale-100' : 'opacity-0 scale-90 absolute inset-0'}`}>
+              <WeeklyChart data={trend} color={colors.ring} goal={goal} isTrendingUp={isTrendingUp} />
+            </div>
+          </div>
+        </div>
+        
+        <div className="text-center">
+          <div className="text-2xl font-bold text-white mb-1 transition-all duration-3000 ease-out">
+            {displayValue}<span className="text-lg text-slate-400 font-normal ml-0.5">{unit}</span>
+          </div>
+          <div className="text-xs text-slate-400">
+            of {goal}{unit}
+          </div>
+        </div>
+        
+        <div className="mt-4 pt-4 border-t border-slate-800/50 text-center">
+          <p className="text-xs text-slate-500">
+            Tap to {showWeekly ? 'see today' : 'see weekly'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/*
+const Sparkline = ({ data, color }: { data: number[]; color: string }) => {
+  const width = 100;
+  const height = 24;
+  const padding = 2;
+  
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  
+  const points = data.map((value, index) => {
+    const x = (index / (data.length - 1)) * width;
+    const y = height - padding - ((value - min) / range) * (height - padding * 2);
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <svg width={width} height={height} className="mx-auto opacity-60">
+        <polyline
+          points={points}
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <p className="text-xs text-slate-500">7 day trend</p>
+    </div>
+  );
+};
+*/
+
+const WeeklyChart = ({ data, color, goal, isTrendingUp }: { data: number[]; color: string; goal: number; isTrendingUp: boolean }) => {
+  const size = 120;
+  const padding = 10;
+  const chartWidth = size - padding * 2;
+  const chartHeight = size - padding * 2;
+  
+  const max = Math.max(...data, goal);
+  const min = 0;
+  const range = max - min || 1;
+  
+  const points = data.map((value, index) => {
+    const x = padding + (index / (data.length - 1)) * chartWidth;
+    const y = padding + chartHeight - ((value - min) / range) * chartHeight;
+    return `${x},${y}`;
+  }).join(' ');
+  
+  // Goal line y position
+  const goalY = padding + chartHeight - ((goal - min) / range) * chartHeight;
+  
+  // Shaded area color based on trend
+  const areaColor = isTrendingUp ? '#10b981' : '#ef4444'; // green for up, red for down
+  
+  // Create smooth curve path
+  const createSmoothPath = () => {
+    const dataPoints = data.map((value, index) => {
+      const x = padding + (index / (data.length - 1)) * chartWidth;
+      const y = padding + chartHeight - ((value - min) / range) * chartHeight;
+      return { x, y };
+    });
+    
+    if (dataPoints.length < 2) return points;
+    
+    let path = `M ${dataPoints[0].x} ${dataPoints[0].y}`;
+    
+    for (let i = 0; i < dataPoints.length - 1; i++) {
+      const current = dataPoints[i];
+      const next = dataPoints[i + 1];
+      const midX = (current.x + next.x) / 2;
+      
+      path += ` Q ${current.x} ${current.y}, ${midX} ${(current.y + next.y) / 2}`;
+      path += ` Q ${next.x} ${next.y}, ${next.x} ${next.y}`;
+    }
+    
+    return path;
+  };
+  
+  return (
+    <div className="relative inline-flex">
+      <svg width={size} height={size}>
+        {/* Goal line */}
+        <line
+          x1={padding}
+          y1={goalY}
+          x2={size - padding}
+          y2={goalY}
+          stroke={color}
+          strokeWidth="1"
+          strokeDasharray="3,3"
+          opacity="0.3"
+        />
+        
+        {/* Area under curve - color based on trend */}
+        <path
+          d={`${createSmoothPath()} L ${size - padding} ${size - padding} L ${padding} ${size - padding} Z`}
+          fill={areaColor}
+          opacity="0.15"
+        />
+        
+        {/* Line chart */}
+        <path
+          d={createSmoothPath()}
+          fill="none"
+          stroke={color}
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        
+        {/* Data points */}
+        {data.map((value, index) => {
+          const x = padding + (index / (data.length - 1)) * chartWidth;
+          const y = padding + chartHeight - ((value - min) / range) * chartHeight;
+          return (
+            <circle
+              key={index}
+              cx={x}
+              cy={y}
+              r="3"
+              fill={color}
+              opacity={index === data.length - 1 ? "1" : "0.6"}
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
+
+const AppleCircularProgress = ({ percent, color, trackColor }: {
+  percent: number;
+  color: string;
+  trackColor: string;
+}) => {
+  const size = 120;
   const numSegments = 18;
   const segmentAngle = 360 / numSegments;
   const radius = size / 2 - 2;
   const barWidth = 5;
   const barHeight = 15;
-  const tiltAngle = 15; // Tilt bars 12 degrees
-  
-  // Color mapping
-  const colorMap: Record<string, string> = {
-    'bg-blue-500': '#3b82f6',
-    'bg-yellow-500': '#eab308',
-    'bg-red-500': '#ef4444',
-  };
-  const fillColor = colorMap[color] || '#3b82f6';
+  const tiltAngle = 12;
   
   const segments = [];
   for (let i = 0; i < numSegments; i++) {
@@ -398,37 +841,43 @@ const CircularProgressMacro = ({ percent, color, size }: { percent: number; colo
     const length = Math.sqrt(dx * dx + dy * dy);
     const rotatedAngle = Math.atan2(dy, dx) + (tiltAngle * Math.PI / 180);
     
-          segments.push(
-        <rect
-          key={i}
-          x={outerX}
-          y={outerY}
-          width={length}
-          height={barWidth}
-          fill={isFilled ? fillColor : '#374151'}
-          rx={barWidth / 2}
-          className="transition-all duration-1000 ease-out"
-          opacity={isFilled ? 1 : 0.3}
-          transform={`rotate(${rotatedAngle * 180 / Math.PI} ${outerX} ${outerY})`}
-        />
-      );
+    segments.push(
+      <rect
+        key={i}
+        x={outerX}
+        y={outerY}
+        width={length}
+        height={barWidth}
+        fill={isFilled ? color : trackColor}
+        rx={barWidth / 2}
+        className="transition-all duration-3000 ease-out"
+        opacity={isFilled ? 1 : 0.3}
+        transform={`rotate(${rotatedAngle * 180 / Math.PI} ${outerX} ${outerY})`}
+        style={{
+          // filter: isFilled ? `drop-shadow(0 0 4px ${color})` : 'none',
+          transformOrigin: `${outerX} ${outerY}`
+        }}
+      />
+    );
   }
   
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="relative inline-flex">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         {segments}
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-xs font-bold text-white">
-          {Math.round(percent)}%
-        </span>
+          <span className="font-bold text-white text-xl transition-all duration-3000 ease-out">
+            {Math.round(percent)}%
+          </span>
       </div>
     </div>
   );
 };
 
 const MealCard = ({ meal }: { meal: Meal }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const getMealIcon = (type: string) => {
     const icons: Record<string, string> = {
       breakfast: '🌅',
@@ -439,33 +888,101 @@ const MealCard = ({ meal }: { meal: Meal }) => {
     return icons[type] || '🍽️';
   };
 
-  const getMealLabel = (type: string) => {
-    return type.charAt(0).toUpperCase() + type.slice(1);
+  const getMealColor = (type: string) => {
+    const colors: Record<string, string> = {
+      breakfast: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+      lunch: 'bg-sky-500/10 text-sky-400 border-sky-500/30',
+      dinner: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+      snack: 'bg-green-500/10 text-green-400 border-green-500/30'
+    };
+    return colors[type] || 'bg-slate-500/10 text-slate-400 border-slate-500/30';
   };
 
   return (
-    <div className="bg-gray-900 rounded-2xl shadow-lg p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-2xl">{getMealIcon(meal.meal_type)}</span>
-        <span className="font-semibold text-white">
-          {getMealLabel(meal.meal_type)}
-        </span>
-      </div>
-      <p className="text-sm text-white/60 mb-3">
-        {meal.food_items.slice(0, 3).join(', ')}
-        {meal.food_items.length > 3 && '...'}
-      </p>
-      <div className="flex items-center gap-4 text-sm">
-        <span className="text-white/80">
-          🔥 {meal.calories || 0} cal
-        </span>
-        <span className="text-white/80">
-          🥩 {meal.protein_g?.toFixed(0) || 0}g
-        </span>
-        <span className="text-white/80">
-          🌱 {meal.carbon_kg?.toFixed(2) || 0}kg CO₂
-        </span>
-      </div>
+    <div className="group relative bg-slate-900/30 backdrop-blur-xl rounded-2xl border border-slate-800/50 overflow-hidden hover:border-slate-700/50 hover:bg-slate-900/40 transition-all duration-200">
+      {/* Dropdown Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-4 flex items-center justify-between hover:bg-slate-800/20 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="text-2xl">{getMealIcon(meal.meal_type)}</div>
+          <div className="text-left">
+            <h3 className="text-lg font-semibold text-white">
+              {meal.food_items && meal.food_items.length > 0 ? meal.food_items[0] : 'No food items'}
+            </h3>
+            {meal.food_items && meal.food_items.length > 1 && (
+              <p className="text-sm text-slate-400">
+                +{meal.food_items.length - 1} more item{meal.food_items.length - 1 !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="text-xl font-bold text-white">{meal.calories || 0} calories</div>
+            <span className={`text-xs font-medium px-2 py-1 rounded-md border ${getMealColor(meal.meal_type)} mt-1 inline-block`}>
+              {meal.meal_type.toUpperCase()}
+            </span>
+          </div>
+          <svg 
+            className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
+
+      {/* Dropdown Content */}
+      {isExpanded && (
+        <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-200">
+          {/* Nutrition Summary */}
+          <div>
+            <h4 className="text-sm font-medium text-white mb-3">Nutrition:</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <div>
+                  <div className="text-sm font-semibold text-white">
+                    {meal.protein_g?.toFixed(1) || 0}g
+                  </div>
+                  <div className="text-xs text-slate-400">Protein</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                <div>
+                  <div className="text-sm font-semibold text-white">
+                    {meal.carbs_g?.toFixed(1) || 0}g
+                  </div>
+                  <div className="text-xs text-slate-400">Carbs</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-rose-400 rounded-full"></div>
+                <div>
+                  <div className="text-sm font-semibold text-white">
+                    {meal.fats_g?.toFixed(1) || 0}g
+                  </div>
+                  <div className="text-xs text-slate-400">Fats</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                <div>
+                  <div className="text-sm font-semibold text-white">
+                    {meal.carbon_kg?.toFixed(2) || 0}kg
+                  </div>
+                  <div className="text-xs text-slate-400">CO₂</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

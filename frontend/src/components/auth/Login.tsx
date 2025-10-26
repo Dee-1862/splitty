@@ -43,31 +43,31 @@ export const Login: React.FC = () => {
             <span className="text-5xl">🍽️</span>
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">Welcome Back</h1>
-          <p className="text-gray-400">Sign in to continue to MindMeal</p>
+          <p className="text-slate-400">Sign in to continue to MindMeal</p>
         </div>
 
-        <div className="bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-800 p-8">
+        <div className="bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-800 p-8">
           <form onSubmit={handleLogin}>
             <div className="mb-5">
-              <label className="block text-sm font-semibold text-gray-300 mb-2.5">Email Address</label>
+              <label className="block text-sm font-semibold text-slate-300 mb-2.5">Email Address</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-5 py-3.5 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-gray-500 hover:border-gray-600"
+                className="w-full px-5 py-3.5 bg-slate-800/50 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-500 hover:border-slate-600"
                 placeholder="you@example.com"
               />
             </div>
             
             <div className="mb-6">
-              <label className="block text-sm font-semibold text-gray-300 mb-2.5">Password</label>
+              <label className="block text-sm font-semibold text-slate-300 mb-2.5">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-5 py-3.5 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-gray-500 hover:border-gray-600"
+                className="w-full px-5 py-3.5 bg-slate-800/50 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-500 hover:border-slate-600"
                 placeholder="••••••••"
               />
             </div>

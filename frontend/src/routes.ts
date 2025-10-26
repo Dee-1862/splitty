@@ -21,11 +21,6 @@ export async function requireAnon(_args?: LoaderFunctionArgs) {
   return null;
 }
 
-async function rootRedirect() {
-  const session = await getSession();
-  return redirect(session ? "/dashboard" : "/login");
-}
-
 import { PublicLayout } from "./components/layout/PublicLayout";
 import { Login } from "./components/auth/Login";
 import { Register } from "./components/auth/Register";
@@ -33,15 +28,12 @@ import { Onboarding } from "./components/auth/Onboarding";
 import { Dashboard } from "./components/views/Dashboard";
 import { USDATest } from "./components/views/USDATest";
 import { Cookbook } from "./components/views/Cookbook";
-import { Profile } from "./components/views/Profile";
-import { ProfileFallback } from "./components/views/ProfileFallback";
 import { ProfileWithDebugToggle } from "./components/views/ProfileWithDebugToggle";
 import { EditProfile } from "./components/views/EditProfile";
 import { DietaryPreferences } from "./components/views/DietaryPreferences";
 import { Notifications } from "./components/views/Notifications";
 import { Privacy } from "./components/views/Privacy";
 import { TabNavigation } from "./components/layout/TabNavigation";
-import { ErrorBoundary } from "./components/common/ErrorBoundary";
 
 // Landing Page Component
 const LandingPage = () => {
@@ -71,7 +63,6 @@ const LandingPage = () => {
   );
 };
 
-// Layout wrapper for protected routes with tab navigation
 const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return React.createElement(
     React.Fragment,
