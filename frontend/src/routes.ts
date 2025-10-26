@@ -70,7 +70,6 @@ const LandingPage = () => {
   );
 };
 
-// Layout wrapper for protected routes with tab navigation
 const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return React.createElement(
     React.Fragment,
