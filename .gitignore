@@ -15,7 +15,6 @@ frontend/build/
 .env
 .env*.local
 .env.development
-.env.test
 .env.production
 frontend/.env
 frontend/.env*.local
