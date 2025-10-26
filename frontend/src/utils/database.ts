@@ -220,6 +220,20 @@ export const addRecipe = async (recipe: Omit<Recipe, 'id' | 'created_at' | 'upda
   return data;
 };
 
+export const deleteRecipe = async (recipeId: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('recipes')
+    .delete()
+    .eq('id', recipeId);
+
+  if (error) {
+    console.error('Error deleting recipe:', error);
+    return false;
+  }
+
+  return true;
+};
+
 // User goals operations
 export const getUserGoals = async (userId: string): Promise<UserGoal[]> => {
   const { data, error } = await supabase
