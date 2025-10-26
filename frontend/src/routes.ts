@@ -51,7 +51,7 @@ const LandingPage = () => {
         React.createElement(
           'a',
           { href: '/login', className: 'bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium' },
-          'Get Started'
+          'Login'
         ),
         React.createElement(
           'a',
@@ -75,12 +75,20 @@ const ProtectedLayout: React.FC<{ children: React.ReactNode }> = ({ children }) 
 export const router = createBrowserRouter([
   { 
     path: "/", 
-    element: React.createElement(PublicLayout, null, React.createElement(LandingPage))
+    loader: async () => {
+      const session = await getSession();
+      if (session) {
+        throw redirect("/dashboard");
+      } else {
+        throw redirect("/login");
+      }
+    }
   },
 
   {
     element: React.createElement(PublicLayout),
     children: [
+      { path: "/landing", element: React.createElement(LandingPage) },
       { path: "/login", element: React.createElement(Login), loader: requireAnon },
       { path: "/register", element: React.createElement(Register), loader: requireAnon },
     ],
