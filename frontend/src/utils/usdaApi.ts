@@ -195,7 +195,7 @@ class USDAApiService {
     }
 
     // Return up to 3 matching foods with realistic nutrition data
-    return matches.slice(0, 3).map(([key, data], index) => {
+    return matches.slice(0, 3).map(([, data], index) => {
       const nutrition = this.calculateNutritionForAmount(data.nutrition, amount, unit);
       const carbonFootprint = this.calculateCarbonFootprint(nutrition, data.description);
       
@@ -464,7 +464,7 @@ class USDAApiService {
     unit: string;
   }> {
     try {
-      const { nutrition: baseNutrition, carbonFootprint: baseCarbon, food } = await this.getFoodNutrition(fdcId);
+      const { nutrition: baseNutrition, food } = await this.getFoodNutrition(fdcId);
       const nutrition = this.calculateNutritionForAmount(baseNutrition, amount, unit);
       const carbonFootprint = this.calculateCarbonFootprint(nutrition, food.description);
       
@@ -543,9 +543,6 @@ class USDAApiService {
 
 // Export singleton instance
 export const usdaApi = new USDAApiService();
-
-// Export types for use in components
-export type { USDANutrient, USDAFood, USDASearchResponse, NutritionData };
 
 // Debug function to test API key
 export const testUSDAConnection = async () => {
