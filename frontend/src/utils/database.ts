@@ -116,16 +116,44 @@ export const getMeals = async (userId: string, date?: string): Promise<Meal[]> =
   return data || [];
 };
 
-export const addMeal = async (meal: Omit<Meal, 'id' | 'created_at' | 'updated_at'>): Promise<Meal | null> => {
+// export const addMeal = async (meal: Omit<Meal, 'id' | 'created_at' | 'updated_at'>): Promise<Meal | null> => {
+//   const { data, error } = await supabase
+//     .from('meals')
+//     .insert(meal)
+//     .select()
+//     .single();
+
+//   if (error) {
+//     console.error('Error adding meal:', error);
+//     return null;
+//   }
+
+//   return data;
+// };
+
+export type NewMeal = {
+  user_id: string;
+  meal_type: string;
+  food_items: string[];
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fats_g: number;
+  carbon_kg: number;
+  image_url?: string; // Added this field (make it optional)
+  date: string;       // Added this field
+};
+
+export const addMeal = async (meal: NewMeal) => {
+  // Assuming your table is named 'meals'
   const { data, error } = await supabase
     .from('meals')
-    .insert(meal)
-    .select()
-    .single();
+    .insert([meal]) // This will now insert all fields, including date and image_url
+    .select();
 
   if (error) {
-    console.error('Error adding meal:', error);
-    return null;
+    console.error('Error adding meal:', error.message);
+    throw new Error(error.message);
   }
 
   return data;

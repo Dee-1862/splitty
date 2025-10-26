@@ -2,14 +2,26 @@
 // Get your free API key from: https://fdc.nal.usda.gov/api-key-signup.html
 
 const USDA_API_KEY = import.meta.env.VITE_USDA_API_KEY;
+console.log('VITE_USDA_API_KEY from env:', USDA_API_KEY);
 const USDA_BASE_URL = 'https://api.nal.usda.gov/fdc/v1';
 
+// --- REPLACE WITH THIS ---
 export interface USDANutrient {
-  nutrientId: number;
-  nutrientName: string;
-  nutrientNumber: string;
-  unitName: string;
-  value: number;
+  type: "FoodNutrient";
+  nutrient: {
+    id: number;
+    number: string;
+    name: string;
+    rank: number;
+    unitName: string;
+  };
+  id: number; // The ID of the FoodNutrient link
+  amount: number; // This is the VALUE of the nutrient
+  foodNutrientDerivation?: {
+    id: number;
+    code: string;
+    description: string;
+  };
 }
 
 export interface USDAFood {
@@ -63,22 +75,30 @@ export interface NutritionData {
 }
 
 // Nutrient IDs for common nutrients
+// We now use arrays to check for primary (SR Legacy/Foundation) AND alternative (Branded) IDs.
 const NUTRIENT_IDS = {
-  CALORIES: 1008, // Energy
-  PROTEIN: 1003, // Protein
-  CARBS: 1005,   // Carbohydrate, by difference
-  FATS: 1004,    // Total lipid (fat)
-  FIBER: 1079,   // Fiber, total dietary
-  SUGAR: 2000,   // Sugars, total including NLEA
-  SODIUM: 1093,  // Sodium, Na
+  CALORIES: [1008, 208],   // Energy (KCAL)
+  PROTEIN:  [1003, 203],   // Protein (G)
+  CARBS:    [1005, 205],   // Carbohydrate, by difference (G)
+  FATS:     [1004, 204],   // Total lipid (fat) (G)
+  FIBER:    [1079, 291],   // Fiber, total dietary (G)
+  SUGAR:    [2000, 269],   // Sugars, total including NLEA (G)
+  SODIUM:   [1093, 307],   // Sodium, Na (MG)
 };
 
 class USDAApiService {
   private apiKey: string;
 
   constructor() {
+    console.log('USDA API Key Status:', {
+      hasKey: !!USDA_API_KEY,
+      keyLength: USDA_API_KEY ? USDA_API_KEY.length : 0,
+      keyPreview: USDA_API_KEY ? `${USDA_API_KEY.substring(0, 8)}...` : 'undefined'
+    });
+    
     if (!USDA_API_KEY) {
       console.warn('USDA API key not found. Please add VITE_USDA_API_KEY to your .env.local file');
+      console.log('To get an API key: https://fdc.nal.usda.gov/api-key-signup.html');
     }
     this.apiKey = USDA_API_KEY || '';
   }
@@ -244,56 +264,81 @@ class USDAApiService {
     return this.makeRequest<USDAFood>(`/food/${fdcId}`);
   }
 
-  extractNutritionData(food: USDAFood): NutritionData {
-    const nutrients = food.foodNutrients;
-    
-    // Debug: Log the food and nutrients for debugging
-    console.log('Extracting nutrition for:', food.description);
-    console.log('Available nutrients:', nutrients.map(n => ({ id: n.nutrientId, name: n.nutrientName, value: n.value })));
-    
-    const getNutrientValue = (nutrientId: number, alternativeIds?: number[], searchNames?: string[]): number => {
-      let nutrient = nutrients.find(n => n.nutrientId === nutrientId);
-      
-      // Try alternative IDs if primary not found
-      if (!nutrient && alternativeIds) {
-        for (const altId of alternativeIds) {
-          nutrient = nutrients.find(n => n.nutrientId === altId);
-          if (nutrient) break;
-        }
-      }
-      
-      // Try searching by name if still not found
-      if (!nutrient && searchNames) {
-        for (const name of searchNames) {
-          nutrient = nutrients.find(n => 
-            n.nutrientName.toLowerCase().includes(name.toLowerCase())
-          );
-          if (nutrient) break;
-        }
-      }
-      
-      if (nutrient) {
-        console.log(`Found nutrient ${nutrientId}: ${nutrient.nutrientName} = ${nutrient.value}`);
-        return Math.round(nutrient.value * 100) / 100;
-      } else {
-        console.log(`Nutrient ${nutrientId} not found`);
-        return 0;
-      }
-    };
-
-    const result = {
-      calories: getNutrientValue(NUTRIENT_IDS.CALORIES, [1008, 1062], ['energy', 'calories']),
-      protein: getNutrientValue(NUTRIENT_IDS.PROTEIN, [1003], ['protein']),
-      carbs: getNutrientValue(NUTRIENT_IDS.CARBS, [1005], ['carbohydrate', 'carbs']),
-      fats: getNutrientValue(NUTRIENT_IDS.FATS, [1004], ['fat', 'lipid', 'total lipid']),
-      fiber: getNutrientValue(NUTRIENT_IDS.FIBER, [1079], ['fiber', 'dietary fiber']),
-      sugar: getNutrientValue(NUTRIENT_IDS.SUGAR, [2000], ['sugar', 'sugars']),
-      sodium: getNutrientValue(NUTRIENT_IDS.SODIUM, [1093], ['sodium', 'na']),
-    };
-
-    console.log('Extracted nutrition data:', result);
-    return result;
-  }
+// --- REPLACE WITH THIS ---
+// --- REPLACE WITH THIS ---
+  extractNutritionData(food: USDAFood): NutritionData {
+      const nutrients = food.foodNutrients;
+      
+      // Debug: Log the food and nutrients for debugging
+      console.log('Extracting nutrition for:', food.description);
+      // You can remove the big JSON.stringify log now if you want
+      
+      const getNutrientValue = (ids: number[]): number => {
+        let foodNutrient: USDANutrient | undefined;
+  
+        for (const id of ids) {
+          // --- FIX 1: Look at the NESTED 'id' ---
+          foodNutrient = nutrients.find(n => n.nutrient.id === id); 
+          
+          if (foodNutrient) {
+            // --- FIX 2: Look at the NESTED 'unitName' ---
+            const unit = foodNutrient.nutrient.unitName.toUpperCase(); 
+            // --- FIX 3: Look at the 'amount' property, not 'value' ---
+            const value = foodNutrient.amount; 
+            
+            // Case 1: Calories (Energy)
+            if (ids.includes(1008) || ids.includes(208)) {
+              if (unit === 'KCAL') {
+                return Math.round(value * 100) / 100;
+              }
+              if (unit === 'KJ') {
+                return Math.round((value / 4.184) * 100) / 100;
+              }
+            } 
+            
+            // Case 2: Macros (Protein, Carbs, Fat, Fiber, Sugar)
+            else if (ids.includes(1003) || ids.includes(1005) || ids.includes(1004) || ids.includes(1079) || ids.includes(2000)) {
+              if (unit === 'G') {
+                return Math.round(value * 100) / 100;
+              }
+              if (unit === 'MG') {
+                return Math.round((value / 1000) * 100) / 100;
+              }
+            }
+            
+            // Case 3: Sodium
+            else if (ids.includes(1093)) {
+              if (unit === 'MG') {
+                // Convert Milligrams to Grams for consistency in our app
+                return Math.round((value / 1000) * 100) / 100;
+              }
+              if (unit === 'G') {
+                 return Math.round(value * 100) / 100;
+              }
+            }
+            
+            console.warn(`Nutrient ${id} found, but unit was '${unit}'. Using value as-is.`);
+            return value;
+          }
+        }
+        
+        console.log(`Nutrient not found for any ID in: [${ids.join(', ')}]`);
+        return 0;
+      };
+  
+      const result = {
+        calories: getNutrientValue(NUTRIENT_IDS.CALORIES),
+        protein: getNutrientValue(NUTRIENT_IDS.PROTEIN),
+        carbs: getNutrientValue(NUTRIENT_IDS.CARBS),
+        fats: getNutrientValue(NUTRIENT_IDS.FATS),
+        fiber: getNutrientValue(NUTRIENT_IDS.FIBER),
+        sugar: getNutrientValue(NUTRIENT_IDS.SUGAR),
+        sodium: getNutrientValue(NUTRIENT_IDS.SODIUM),
+      };
+  
+      console.log('Extracted nutrition data (Macros in G):', result);
+      return result;
+    }
 
   // Calculate carbon footprint based on food type and nutrition data
   calculateCarbonFootprint(nutritionData: NutritionData, foodType?: string): number {
@@ -349,8 +394,17 @@ class USDAApiService {
     food: USDAFood;
   }> {
     try {
+      console.log(`Getting food details for ID: ${fdcId}`);
       const food = await this.getFoodDetails(fdcId);
+      console.log(`Food details retrieved:`, { 
+        fdcId: food.fdcId, 
+        description: food.description, 
+        nutrientsCount: food.foodNutrients?.length || 0 
+      });
+      
       const nutrition = this.extractNutritionData(food);
+      console.log(`Extracted nutrition:`, nutrition);
+      
       const carbonFootprint = this.calculateCarbonFootprint(nutrition, food.description);
       
       return {
@@ -438,22 +492,30 @@ class USDAApiService {
     amount: number;
     unit: string;
   }>> {
+    console.log('searchAndGetNutrition called with:', { query, amount, unit, hasApiKey: !!this.apiKey });
+    
     if (!this.apiKey) {
       console.warn('USDA API key not found. Returning realistic mock data for testing.');
       console.log('To get real data, add VITE_USDA_API_KEY to your .env.local file');
       
       // Return realistic mock data based on common foods
       const mockFoods = this.getMockFoodData(query, amount, unit);
+      console.log('Returning mock data:', mockFoods);
       return mockFoods;
     }
 
     try {
+      console.log('Searching for foods with query:', query);
       const searchResults = await this.searchFoodsSimple(query, 5); // Limit to 5 results
+      console.log('Search results:', searchResults);
       const results = [];
 
       for (const food of searchResults) {
         try {
+          console.log(`Getting nutrition for ${food.description} (ID: ${food.fdcId})`);
           const nutritionData = await this.getFoodNutritionForAmount(food.fdcId, amount, unit);
+          console.log(`Nutrition data for ${food.description}:`, nutritionData.nutrition);
+          
           results.push({
             fdcId: food.fdcId,
             description: food.description,
@@ -470,6 +532,7 @@ class USDAApiService {
         }
       }
 
+      console.log('Final results:', results);
       return results;
     } catch (error) {
       console.error('Error searching and getting nutrition:', error);
@@ -483,3 +546,34 @@ export const usdaApi = new USDAApiService();
 
 // Export types for use in components
 export type { USDANutrient, USDAFood, USDASearchResponse, NutritionData };
+
+// Debug function to test API key
+export const testUSDAConnection = async () => {
+  console.log('Testing USDA API connection...');
+  console.log('API Key status:', {
+    hasKey: !!USDA_API_KEY,
+    keyLength: USDA_API_KEY?.length || 0,
+    keyPreview: USDA_API_KEY ? `${USDA_API_KEY.substring(0, 8)}...` : 'undefined'
+  });
+  
+  if (!USDA_API_KEY) {
+    console.error('No API key found! Please add VITE_USDA_API_KEY to .env.local');
+    return false;
+  }
+  
+  try {
+    const response = await fetch(`${USDA_BASE_URL}/foods/search?query=apple&api_key=${USDA_API_KEY}&pageSize=1`);
+    const data = await response.json();
+    
+    if (response.ok) {
+      console.log('✅ USDA API connection successful!', data);
+      return true;
+    } else {
+      console.error('❌ USDA API error:', data);
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ USDA API connection failed:', error);
+    return false;
+  }
+};
