@@ -39,6 +39,8 @@ MindMeal is a comprehensive platform that combines:
 
 One of the biggest learning experiences was making Gemini AI talk to other APIs—understanding how to structure prompts, handle API responses, and chain different services together to create a seamless user experience.
 
+Try it out - https://splitty-3sm2.vercel.app/
+
 ### Innovation: Token Cost Optimization
 
 One of the most innovative things we did was optimize our Gemini API costs by using Chinese in our prompts. By strategically incorporating Chinese characters into prompts to Gemini, we were able to cut our token costs by approximately 40-50% without any loss in output quality. This approach significantly reduced our API expenses while maintaining the same level of AI-generated recipe quality and suggestions.
