@@ -25,13 +25,13 @@ export const Cookbook: React.FC = () => {
             onClick={() => setMode('assemble')}
             className={`p-6 rounded-xl border-2 transition-all ${
               mode === 'assemble'
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-gray-200 hover:border-gray-300'
+                ? 'border-primary-500 bg-primary-50'
+                : 'border-gray-700 hover:border-gray-600 bg-gray-800'
             }`}
           >
             <div className="text-4xl mb-2">🥗</div>
-            <h3 className="font-semibold text-gray-900 mb-1">Assemble</h3>
-            <p className="text-sm text-gray-600">
+            <h3 className={`font-semibold mb-1 ${mode === 'assemble' ? 'text-primary-600' : 'text-white'}`}>Assemble</h3>
+            <p className={`text-sm ${mode === 'assemble' ? 'text-gray-700' : 'text-white/60'}`}>
               Use existing ingredients without cooking
             </p>
           </button>
@@ -39,13 +39,13 @@ export const Cookbook: React.FC = () => {
             onClick={() => setMode('cook')}
             className={`p-6 rounded-xl border-2 transition-all ${
               mode === 'cook'
-                ? 'border-primary-600 bg-primary-50'
-                : 'border-gray-200 hover:border-gray-300'
+                ? 'border-primary-500 bg-primary-50'
+                : 'border-gray-700 hover:border-gray-600 bg-gray-800'
             }`}
           >
             <div className="text-4xl mb-2">🍳</div>
-            <h3 className="font-semibold text-gray-900 mb-1">Cook</h3>
-            <p className="text-sm text-gray-600">
+            <h3 className={`font-semibold mb-1 ${mode === 'cook' ? 'text-primary-600' : 'text-white'}`}>Cook</h3>
+            <p className={`text-sm ${mode === 'cook' ? 'text-gray-700' : 'text-white/60'}`}>
               Create cooked recipes with instructions
             </p>
           </button>

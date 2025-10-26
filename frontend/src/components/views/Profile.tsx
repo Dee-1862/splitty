@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Target, TrendingUp, Calendar, Settings } from 'lucide-react';
+import { User, Target, TrendingUp, Calendar, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../../AuthContext';
 import { 
   getProfile, 
@@ -15,6 +15,7 @@ import {
   type UserGoal 
 } from '../../utils/database';
 import { LoadingSpinner } from '../common/LoadingSpinner';
+import { supabase } from '../../supabase';
 
 export const Profile: React.FC = () => {
   const { user } = useAuth();
@@ -81,6 +82,15 @@ export const Profile: React.FC = () => {
       console.log('Setting loading to false');
       setLoading(false);
       setFetching(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error logging out:', error);
     }
   };
 
@@ -246,6 +256,16 @@ export const Profile: React.FC = () => {
           >
             <p className="font-medium text-white">Privacy & Security</p>
             <p className="text-sm text-gray-400">Manage your data and privacy</p>
+          </button>
+          <button 
+            onClick={handleLogout}
+            className="w-full text-left p-3 rounded-lg hover:bg-red-500/10 transition-colors border-t border-gray-700 mt-3 pt-3 flex items-center gap-3"
+          >
+            <LogOut className="text-red-500" size={20} />
+            <div>
+              <p className="font-medium text-red-500">Logout</p>
+              <p className="text-sm text-gray-400">Sign out of your account</p>
+            </div>
           </button>
         </div>
       </div>

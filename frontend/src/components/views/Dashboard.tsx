@@ -23,6 +23,12 @@ export const Dashboard: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
+  const [animatedProgress, setAnimatedProgress] = useState({
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fats: 0
+  });
   const [dailyStats, setDailyStats] = useState<DailyStats>({
     total_calories: 0,
     total_protein: 0,
@@ -80,6 +86,47 @@ export const Dashboard: React.FC = () => {
     }
   }, [user?.id, fetchData]); // Include fetchData in dependencies
 
+  const calorieProgress = Math.min((dailyStats.total_calories / dailyStats.goal_calories) * 100, 100);
+  const proteinProgress = Math.min((dailyStats.total_protein / dailyStats.goal_protein) * 100, 100);
+  const carbsProgress = Math.min((dailyStats.total_carbs / dailyStats.goal_carbs) * 100, 100);
+  const fatsProgress = Math.min((dailyStats.total_fats / dailyStats.goal_fats) * 100, 100);
+
+  // Animate progress bars when component mounts
+  useEffect(() => {
+    if (loading) return;
+    
+    setAnimatedProgress({ calories: 0, protein: 0, carbs: 0, fats: 0 });
+    
+    const timer = setTimeout(() => {
+      setAnimatedProgress({
+        calories: calorieProgress,
+        protein: proteinProgress,
+        carbs: carbsProgress,
+        fats: fatsProgress
+      });
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [calorieProgress, proteinProgress, carbsProgress, fatsProgress, loading]);
+
+  // Get status message
+  const getCalorieStatus = () => {
+    const percent = calorieProgress;
+    if (percent < 10) return { text: "Just getting started! 🌱", color: "text-gray-400" };
+    if (percent < 50) return { text: "Good progress 💪", color: "text-blue-400" };
+    if (percent < 90) return { text: "Almost there! 🎯", color: "text-yellow-400" };
+    if (percent < 100) return { text: "Nearly perfect! ⭐", color: "text-green-400" };
+    return { text: "Goal achieved! 🎉", color: "text-green-400" };
+  };
+
+  const getCarbonStatus = () => {
+    const kg = dailyStats.total_carbon;
+    if (kg < 1) return { text: "Eco champion! 🌟", color: "text-green-400", bgColor: "bg-green-500/20", borderColor: "border-green-500/30" };
+    if (kg < 3) return { text: "Great choices 🌿", color: "text-green-400", bgColor: "bg-green-500/20", borderColor: "border-green-500/30" };
+    if (kg < 5) return { text: "Stay mindful 🌱", color: "text-yellow-400", bgColor: "bg-yellow-500/20", borderColor: "border-yellow-500/30" };
+    return { text: "Try alternatives 🔄", color: "text-orange-400", bgColor: "bg-orange-500/20", borderColor: "border-orange-500/30" };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen pt-20 pb-24 bg-gray-950">
@@ -87,6 +134,7 @@ export const Dashboard: React.FC = () => {
       </div>
     );
   }
+  
   console.log('Rendering dashboard with:', {
     loading,
     user: !!user,
@@ -95,46 +143,68 @@ export const Dashboard: React.FC = () => {
     fetching: fetchingRef.current
   });
 
-  const calorieProgress = Math.min((dailyStats.total_calories / dailyStats.goal_calories) * 100, 100);
-  const proteinProgress = Math.min((dailyStats.total_protein / dailyStats.goal_protein) * 100, 100);
-  const carbsProgress = Math.min((dailyStats.total_carbs / dailyStats.goal_carbs) * 100, 100);
-  const fatsProgress = Math.min((dailyStats.total_fats / dailyStats.goal_fats) * 100, 100);
+  const calorieStatus = getCalorieStatus();
+  const carbonStatus = getCarbonStatus();
+
+  // Get current date formatted
+  const today = new Date();
+  const dateString = today.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    month: 'long', 
+    day: 'numeric' 
+  });
 
   return (
-    <div className="min-h-screen bg-gray-950 pt-4 pb-24 px-4">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-950 pt-4 pb-24 px-4 max-w-2xl mx-auto">
+      {/* Header with Date */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-2">Your Day Today</h1>
-        <p className="text-white/60">Track your daily nutrition</p>
+        <p className="text-sm text-gray-500 mb-1">📅 {dateString}</p>
+        <h1 className="text-3xl font-bold text-white mb-1">Your Day Today</h1>
+        <p className="text-gray-400">Track your daily nutrition</p>
       </div>
 
       {/* Progress Ring - Calories */}
-      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4">
+      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4 border border-gray-800">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           <p className="text-white text-sm font-medium">CALORIES</p>
+          <span className={`text-sm font-bold ${calorieStatus.color}`}>
+            {Math.round(calorieProgress)}%
+          </span>
         </div>
         
-        {/* Calories Count */}
-        <p className="text-white text-2xl font-bold mb-4">
-          {dailyStats.total_calories} / {dailyStats.goal_calories} cal
-        </p>
+        {/* Calories Count - Bigger consumed value */}
+        <div className="flex items-baseline gap-2 mb-4">
+          <span className="text-5xl font-bold text-white">
+            {dailyStats.total_calories}
+          </span>
+          <span className="text-3xl text-gray-600">/</span>
+          <span className="text-3xl text-gray-500">
+            {dailyStats.goal_calories}
+          </span>
+          <span className="text-xl text-gray-500">cal</span>
+        </div>
         
         {/* Progress Bar - Segmented (40 segments) */}
         <div className="flex gap-0.5">
           {Array.from({ length: 40 }).map((_, i) => {
             const segmentPercent = (i + 1) * 2.5; // Each segment is 2.5%
-            const isFilled = segmentPercent <= calorieProgress;
+            const isFilled = segmentPercent <= animatedProgress.calories;
             return (
               <div
                 key={i}
-                className={`flex-1 h-2.5 rounded-sm transition-all duration-500 ${
+                className={`flex-1 h-6 rounded-sm transition-all duration-20000 ease-out ${
                   isFilled ? 'bg-green-500' : 'bg-gray-700'
                 }`}
               />
             );
           })}
         </div>
+
+        {/* Status Message */}
+        <p className={`text-sm mt-3 text-center ${calorieStatus.color}`}>
+          {calorieStatus.text}
+        </p>
       </div>
 
       {/* Macros */}
@@ -147,7 +217,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-white text-xs font-medium">Protein</p>
             </div>
             <CircularProgressMacro
-              percent={proteinProgress}
+              percent={animatedProgress.protein}
               color="bg-blue-500"
               size={80}
             />
@@ -165,7 +235,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-white text-xs font-medium">Carbs</p>
             </div>
             <CircularProgressMacro
-              percent={carbsProgress}
+              percent={animatedProgress.carbs}
               color="bg-yellow-500"
               size={80}
             />
@@ -183,7 +253,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-white text-xs font-medium">Fats</p>
             </div>
             <CircularProgressMacro
-              percent={fatsProgress}
+              percent={animatedProgress.fats}
               color="bg-red-500"
               size={80}
             />
@@ -195,18 +265,63 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Carbon Footprint */}
-      <div className="bg-gray-900 rounded-2xl shadow-lg p-6 mb-4">
-        <div className="flex items-center justify-between">
+      <div className={`bg-gray-900 rounded-2xl shadow-lg p-6 mb-4 border ${carbonStatus.borderColor}`}>
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Leaf className="text-green-500" size={24} />
+            <div className={`w-12 h-12 ${carbonStatus.bgColor} rounded-xl flex items-center justify-center`}>
+              <Leaf className={carbonStatus.color} size={24} />
+            </div>
             <div>
-              <p className="text-xs text-white/60 uppercase tracking-wide">Carbon Footprint</p>
-              <p className="text-xl font-bold text-white">
-                {dailyStats.total_carbon.toFixed(2)} kg CO₂
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Carbon Footprint</p>
+              <p className="text-2xl font-bold text-white">
+                {dailyStats.total_carbon.toFixed(2)} kg
               </p>
             </div>
           </div>
-          <Target className="text-green-500" size={24} />
+          <div className="text-right">
+            <p className="text-xs text-gray-500">Daily Budget</p>
+            <p className="text-sm font-medium text-gray-400">5.0 kg</p>
+          </div>
+        </div>
+
+                                   {/* Progress Bar - Segmented */}
+         <div className="relative h-3 bg-gray-800 rounded-full overflow-hidden mb-3">
+           {/* Background segments */}
+           <div className="absolute inset-0 flex">
+             <div className="w-1/3 bg-gray-700 border-r border-gray-600"></div>
+             <div className="w-1/3 bg-gray-700 border-r border-gray-600"></div>
+             <div className="w-1/3 bg-gray-700"></div>
+           </div>
+           {/* Filled bar with color gradient */}
+           <div 
+             className="absolute top-0 left-0 h-full rounded-full transition-all duration-1000"
+             style={{ 
+               width: `${Math.min((dailyStats.total_carbon / 5) * 100, 100)}%`,
+               background: (() => {
+                 const percent = (dailyStats.total_carbon / 5) * 100;
+                 if (percent <= 33) {
+                   // Green in first third
+                   return 'linear-gradient(to right, #4ade80, #22c55e)';
+                 } else if (percent <= 66) {
+                   // Green to yellow in second third
+                   return 'linear-gradient(to right, #4ade80, #22c55e, #eab308, #facc15)';
+                 } else {
+                   // Green to yellow to red in third section
+                   return 'linear-gradient(to right, #4ade80, #22c55e, #eab308, #facc15, #f87171, #ef4444)';
+                 }
+               })()
+             }}
+           />
+           {/* Segment divider bars */}
+           <div className="absolute top-0 left-1/3 h-full w-px bg-gray-600"></div>
+           <div className="absolute top-0 left-2/3 h-full w-px bg-gray-600"></div>
+         </div>
+
+        {/* Status Badge */}
+        <div className="text-center">
+          <span className={`text-xs ${carbonStatus.color} ${carbonStatus.bgColor} px-4 py-2 rounded-full border ${carbonStatus.borderColor}`}>
+            {carbonStatus.text}
+          </span>
         </div>
       </div>
 
@@ -248,145 +363,66 @@ export const Dashboard: React.FC = () => {
 };
 
 const CircularProgressMacro = ({ percent, color, size }: { percent: number; color: string; size: number }) => {
-  const radius = (size - 24) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (percent / 100) * circumference;
+  const numSegments = 18;
+  const segmentAngle = 360 / numSegments;
+  const radius = size / 2 - 2;
+  const barWidth = 5;
+  const barHeight = 15;
+  const tiltAngle = 15; // Tilt bars 12 degrees
   
-  // Extract color value with futuristic glow
-  const colorMap: Record<string, { main: string; glow: string; bg: string }> = {
-    'bg-blue-500': { main: '#3b82f6', glow: '#60a5fa', bg: '#1e3a8a' },
-    'bg-yellow-500': { main: '#eab308', glow: '#fde047', bg: '#a16207' },
-    'bg-red-500': { main: '#ef4444', glow: '#f87171', bg: '#991b1b' },
+  // Color mapping
+  const colorMap: Record<string, string> = {
+    'bg-blue-500': '#3b82f6',
+    'bg-yellow-500': '#eab308',
+    'bg-red-500': '#ef4444',
   };
-  const colors = colorMap[color] || colorMap['bg-blue-500'];
+  const fillColor = colorMap[color] || '#3b82f6';
+  
+  const segments = [];
+  for (let i = 0; i < numSegments; i++) {
+    const angle = (i * segmentAngle) * Math.PI / 180;
+    const outerRadius = radius;
+    const innerRadius = radius - barHeight;
+    
+    const outerX = size / 2 + outerRadius * Math.cos(angle - Math.PI / 2);
+    const outerY = size / 2 + outerRadius * Math.sin(angle - Math.PI / 2);
+    const innerX = size / 2 + innerRadius * Math.cos(angle - Math.PI / 2);
+    const innerY = size / 2 + innerRadius * Math.sin(angle - Math.PI / 2);
+    
+    const segmentPercent = ((i + 1) / numSegments) * 100;
+    const isFilled = segmentPercent <= percent;
+    
+    // Draw rectangle pointing inward with tilt
+    const dx = innerX - outerX;
+    const dy = innerY - outerY;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const rotatedAngle = Math.atan2(dy, dx) + (tiltAngle * Math.PI / 180);
+    
+          segments.push(
+        <rect
+          key={i}
+          x={outerX}
+          y={outerY}
+          width={length}
+          height={barWidth}
+          fill={isFilled ? fillColor : '#374151'}
+          rx={barWidth / 2}
+          className="transition-all duration-1000 ease-out"
+          opacity={isFilled ? 1 : 0.3}
+          transform={`rotate(${rotatedAngle * 180 / Math.PI} ${outerX} ${outerY})`}
+        />
+      );
+  }
   
   return (
-    <div className="relative" style={{ width: size, height: size }}>
-      {/* Outer glow effect */}
-      <div 
-        className="absolute inset-0 rounded-full opacity-30 animate-pulse"
-        style={{
-          background: `radial-gradient(circle, ${colors.glow}20 0%, transparent 70%)`,
-          filter: 'blur(8px)',
-        }}
-      />
-      
-      <svg
-        width={size}
-        height={size}
-        className="transform -rotate-90 relative z-10"
-        style={{ width: size, height: size }}
-      >
-        {/* Outer ring for depth */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius + 4}
-          stroke={colors.bg}
-          strokeWidth="2"
-          fill="none"
-          opacity="0.3"
-        />
-        
-        {/* Background circle with gradient */}
-        <defs>
-          <linearGradient id={`bg-${color}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={colors.bg} stopOpacity="0.8" />
-            <stop offset="100%" stopColor={colors.bg} stopOpacity="0.4" />
-          </linearGradient>
-          <linearGradient id={`progress-${color}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={colors.main} stopOpacity="1" />
-            <stop offset="50%" stopColor={colors.glow} stopOpacity="0.9" />
-            <stop offset="100%" stopColor={colors.main} stopOpacity="0.8" />
-          </linearGradient>
-          <filter id={`glow-${color}`}>
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge> 
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        
-        {/* Background circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={`url(#bg-${color})`}
-          strokeWidth="6"
-          fill="none"
-        />
-        
-        {/* Progress circle with glow */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={`url(#progress-${color})`}
-          strokeWidth="6"
-          fill="none"
-          strokeDasharray={strokeDasharray}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          filter={`url(#glow-${color})`}
-          className="transition-all duration-1500 ease-out"
-          style={{
-            strokeDasharray: circumference,
-            strokeDashoffset: strokeDashoffset,
-          }}
-        />
-        
-        {/* Inner highlight ring */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius - 3}
-          stroke={colors.glow}
-          strokeWidth="1"
-          fill="none"
-          opacity="0.6"
-        />
+    <div className="relative flex items-center justify-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {segments}
       </svg>
-      
-      {/* Percentage text in center with glow */}
-      <div className="absolute inset-0 flex items-center justify-center z-20">
-        <div className="relative">
-          <span 
-            className="text-white text-sm font-bold drop-shadow-lg"
-            style={{
-              textShadow: `0 0 10px ${colors.glow}, 0 0 20px ${colors.glow}40`,
-            }}
-          >
-            {Math.round(percent)}%
-          </span>
-        </div>
-      </div>
-      
-      {/* Animated dots around the circle */}
-      <div className="absolute inset-0 animate-spin" style={{ animationDuration: '8s' }}>
-        {Array.from({ length: 8 }).map((_, i) => {
-          const angle = (i * 45) * Math.PI / 180;
-          const dotRadius = radius + 8;
-          const x = size / 2 + dotRadius * Math.cos(angle);
-          const y = size / 2 + dotRadius * Math.sin(angle);
-          const opacity = (percent / 100) * 0.6;
-          
-          return (
-            <div
-              key={i}
-              className="absolute w-1 h-1 rounded-full"
-              style={{
-                left: x - 2,
-                top: y - 2,
-                backgroundColor: colors.glow,
-                opacity: opacity,
-                boxShadow: `0 0 6px ${colors.glow}`,
-              }}
-            />
-          );
-        })}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-xs font-bold text-white">
+          {Math.round(percent)}%
+        </span>
       </div>
     </div>
   );

@@ -29,6 +29,7 @@ async function rootRedirect() {
 import { PublicLayout } from "./components/layout/PublicLayout";
 import { Login } from "./components/auth/Login";
 import { Register } from "./components/auth/Register";
+import { Onboarding } from "./components/auth/Onboarding";
 import { Dashboard } from "./components/views/Dashboard";
 import { USDATest } from "./components/views/USDATest";
 import { Cookbook } from "./components/views/Cookbook";
@@ -91,6 +92,13 @@ export const router = createBrowserRouter([
     children: [
       { path: "/login", element: React.createElement(Login), loader: requireAnon },
       { path: "/register", element: React.createElement(Register), loader: requireAnon },
+    ],
+  },
+
+  {
+    element: React.createElement(PublicLayout),
+    children: [
+      { path: "/onboarding", element: React.createElement(Onboarding), loader: requireAuth },
     ],
   },
 
