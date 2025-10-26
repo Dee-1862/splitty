@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../AuthContext'; 
-import { Plus, UtensilsCrossed, Leaf } from 'lucide-react';
+import { Plus, UtensilsCrossed, Leaf, Lightbulb, ArrowRight, Droplet, Activity } from 'lucide-react';
 import { LoadingSpinner } from '../common/LoadingSpinner';
-import { getMeals, getProfile, calculateDailyStats, addMeal, type Meal, type Profile } from '../../utils/database';
+import { getMeals, getProfile, calculateDailyStats, addMeal, getWaterIntake, addWaterIntake, calculateBMI, getBMICategory, type Meal, type Profile } from '../../utils/database';
 import { AddMealModal } from './AddMealModal';
 import { toast } from 'react-toastify';
+import { getSustainableAlternatives } from '../../utils/carbonData';
 
 interface DailyStats {
   total_calories: number;
@@ -28,9 +29,10 @@ interface WeeklyTrend {
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [meals, setMeals] = useState<Meal[]>([]);
-  const [, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
+  const [waterIntake, setWaterIntake] = useState(0);
   const [dailyStats, setDailyStats] = useState<DailyStats>({
     total_calories: 0,
     total_protein: 0,
@@ -61,16 +63,19 @@ export const Dashboard: React.FC = () => {
       const today = new Date().toISOString().split('T')[0];
       console.log('Fetching data for date:', today);
 
-      const [profileData, mealsData] = await Promise.all([
+      const [profileData, mealsData, waterData] = await Promise.all([
         getProfile(user.id),
-        getMeals(user.id, today)
+        getMeals(user.id, today),
+        getWaterIntake(user.id, today)
       ]);
 
       console.log('Profile data:', profileData);
       console.log('Meals data:', mealsData);
+      console.log('Water intake:', waterData);
 
       setProfile(profileData);
       setMeals(mealsData);
+      setWaterIntake(waterData);
 
       const stats = calculateDailyStats(mealsData, profileData || {});
       console.log('Calculated stats:', stats);
@@ -267,6 +272,37 @@ export const Dashboard: React.FC = () => {
 
   const smartInsight = getSmartInsight();
 
+  // Calculate BMI and hydration status
+  const bmi = profile ? calculateBMI(profile.weight || 0, profile.height || 0) : 0;
+  const bmiCategory = getBMICategory(bmi);
+  const goalWater = profile?.goal_water || 2000; // ml
+  const waterProgress = Math.min((waterIntake / goalWater) * 100, 100);
+
+  // Handle water intake button
+  const handleAddWater = async (amount: number) => {
+    if (!user) return;
+    
+    try {
+      console.log('Adding water intake:', { userId: user.id, amount });
+      const today = new Date().toISOString().split('T')[0];
+      const result = await addWaterIntake(user.id, amount);
+      console.log('Water intake result:', result);
+      
+      if (result) {
+        const newIntake = await getWaterIntake(user.id, today);
+        console.log('New water intake:', newIntake);
+        setWaterIntake(newIntake);
+        toast.success(`Added ${amount}ml of water`);
+      } else {
+        console.error('Failed to add water intake');
+        toast.error('Failed to add water');
+      }
+    } catch (error) {
+      console.error('Error adding water:', error);
+      toast.error('Failed to add water');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -431,6 +467,103 @@ export const Dashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Hydration & BMI */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
+          {/* Hydration Tracking */}
+          <div className="relative bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-800/50 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-950/20 to-transparent pointer-events-none"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-sm font-semibold text-white mb-1 tracking-wide uppercase">Hydration</h2>
+                  <p className="text-xs text-slate-400">Daily Water Intake</p>
+                </div>
+                <Droplet className="text-blue-400" size={24} />
+              </div>
+              
+              <div className="mb-6">
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="text-4xl font-bold text-white">{waterIntake}</span>
+                  <span className="text-sm text-slate-400">ml</span>
+                </div>
+                <div className="text-xs text-slate-400">
+                  Goal: {goalWater}ml
+                </div>
+              </div>
+
+              <div className="relative mb-4">
+                <div className="h-2 bg-slate-800/50 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full rounded-full transition-all duration-1000 ease-out"
+                    style={{ 
+                      width: `${waterProgress}%`,
+                      background: 'linear-gradient(to right, #3b82f6, #60a5fa)'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Quick Add Buttons */}
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => handleAddWater(250)}
+                  className="px-3 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors text-sm font-medium"
+                >
+                  +250ml
+                </button>
+                <button
+                  onClick={() => handleAddWater(500)}
+                  className="px-3 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors text-sm font-medium"
+                >
+                  +500ml
+                </button>
+                <button
+                  onClick={() => handleAddWater(750)}
+                  className="px-3 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-colors text-sm font-medium"
+                >
+                  +750ml
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* BMI Display */}
+          <div className="relative bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border border-slate-800/50 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-950/20 to-transparent pointer-events-none"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-sm font-semibold text-white mb-1 tracking-wide uppercase">BMI</h2>
+                  <p className="text-xs text-slate-400">Body Mass Index</p>
+                </div>
+                <Activity className="text-purple-400" size={24} />
+              </div>
+              
+              <div className="mb-6">
+                {bmi > 0 ? (
+                  <>
+                    <div className="text-4xl font-bold text-white mb-2">{bmi}</div>
+                    <div className={`inline-block px-3 py-1.5 rounded-lg text-sm font-semibold ${bmiCategory.color.replace('text-', 'bg-')} ${bmiCategory.color}`}>
+                      {bmiCategory.label}
+                    </div>
+                    <div className="text-xs text-slate-400 mt-3">
+                      {profile?.weight?.toFixed(1)}kg / {profile?.height?.toFixed(0)}cm
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-slate-400 text-sm py-4">
+                    Add height & weight in Profile to calculate BMI
+                  </div>
+                )}
+              </div>
+
+
             </div>
           </div>
         </div>
@@ -814,11 +947,11 @@ const AppleCircularProgress = ({ percent, color, trackColor }: {
   trackColor: string;
 }) => {
   const size = 120;
-  const numSegments = 18;
+  const numSegments = 15;
   const segmentAngle = 360 / numSegments;
   const radius = size / 2 - 2;
   const barWidth = 5;
-  const barHeight = 15;
+  const barHeight = 23;
   const tiltAngle = 12;
   
   const segments = [];
@@ -938,7 +1071,20 @@ const MealCard = ({ meal }: { meal: Meal }) => {
 
       {/* Dropdown Content */}
       {isExpanded && (
-        <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-200">
+        <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-200 space-y-4">
+          {/* Full Food Items List */}
+          <div>
+            <h4 className="text-sm font-medium text-white mb-2">Food Items:</h4>
+            <ul className="text-sm text-slate-300 space-y-1">
+              {(meal.food_items || []).map((item: string, index: number) => (
+                <li key={index} className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
           {/* Nutrition Summary */}
           <div>
             <h4 className="text-sm font-medium text-white mb-3">Nutrition:</h4>
@@ -981,6 +1127,62 @@ const MealCard = ({ meal }: { meal: Meal }) => {
               </div>
             </div>
           </div>
+
+          {/* Sustainable Alternatives */}
+          {(() => {
+            const alternatives = getSustainableAlternatives(meal.food_items || []);
+            if (alternatives.length > 0) {
+              return (
+                <div className="bg-gradient-to-br from-emerald-950/30 to-slate-900/50 backdrop-blur-xl rounded-2xl p-4 border border-emerald-800/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Lightbulb className="text-emerald-400" size={18} />
+                    <h4 className="text-sm font-semibold text-emerald-300">🌱 Sustainable Alternatives</h4>
+                  </div>
+                  <div className="space-y-3">
+                    {alternatives.map((alt, index) => (
+                      <div key={index} className="bg-slate-800/30 rounded-xl p-3 border border-emerald-700/20">
+                        <div className="flex items-start gap-2 mb-2">
+                          <div className="flex-1">
+                            <p className="text-sm text-slate-400">
+                              <span className="line-through text-slate-500">{alt.original}</span>
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <ArrowRight className="text-emerald-400" size={14} />
+                              <span className="text-sm font-semibold text-emerald-300">{alt.suggestion}</span>
+                            </div>
+                            {/* Dietary Type & Protein Badges */}
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                alt.dietaryType === 'vegan' ? 'bg-green-500/20 text-green-300 border border-green-500/30' :
+                                alt.dietaryType === 'vegetarian' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                                alt.dietaryType === 'pescatarian' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
+                                'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                              }`}>
+                                {alt.dietaryType}
+                              </span>
+                              {alt.proteinRich && (
+                                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                  High Protein
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs font-bold text-emerald-400">
+                              -{alt.carbonSaved.toFixed(1)}kg CO₂
+                            </div>
+                            <div className="text-xs text-emerald-400/70">saved</div>
+                          </div>
+                        </div>
+                        <p className="text-xs text-emerald-300/80 mt-2">{alt.healthBenefit}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
         </div>
       )}
     </div>

@@ -274,6 +274,181 @@ const getCharacterGradient = (characterId: string): string => {
   return gradients[characterId] || 'from-emerald-500 via-green-500 to-teal-500';
 };
 
+// Simple seeded random number generator
+class SeededRandom {
+  private seed: number;
+  
+  constructor(seed: string) {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      const char = seed.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    this.seed = Math.abs(hash) % 2147483647;
+    if (this.seed === 0) this.seed = 1;
+  }
+  
+  next(): number {
+    this.seed = (this.seed * 16807) % 2147483647;
+    return (this.seed - 1) / 2147483646;
+  }
+}
+
+// Generate a random pixelated Halloween avatar
+const generateRandomPixelAvatar = (seed?: string): React.ReactNode => {
+  const rng = seed ? new SeededRandom(seed) : null;
+  const rand = () => rng ? rng.next() : Math.random();
+  const characterType = Math.floor(rand() * 7);
+  
+  // Halloween color palettes
+  const ghostColors = ['#f3f4f6', '#e5e7eb', '#d1d5db'];
+  const pumpkinColors = ['#ea580c', '#f97316', '#fb923c'];
+  const witchColors = ['#1f2937', '#374151', '#4b5563', '#7c2d12'];
+  const skeletonColors = ['#fef3c7', '#fde68a', '#f59e0b'];
+  const vampireColors = ['#1f2937', '#374151', '#dc2626'];
+  const mummyColors = ['#fef3c7', '#fde68a', '#fbbf24'];
+  const zombieColors = ['#7c2d12', '#92400e', '#059669'];
+  
+  const elements: React.ReactElement[] = [];
+  
+  // Background
+  elements.push(
+    <rect key="bg" x="0" y="0" width="100" height="100" fill="#fef3c7" opacity="0.5" />
+  );
+  
+  if (characterType === 0) {
+    // Ghost
+    const ghostColor = ghostColors[Math.floor(rand() * ghostColors.length)];
+    elements.push(
+      <rect key="head" x="40" y="20" width="20" height="18" fill={ghostColor} className="animate-pulse" />,
+      <rect key="eye1" x="45" y="26" width="4" height="4" fill="#1f2937" className="animate-pulse" />,
+      <rect key="eye2" x="51" y="26" width="4" height="4" fill="#1f2937" className="animate-pulse" />,
+      <rect key="mouth" x="47" y="32" width="6" height="3" fill="#1f2937" className="animate-pulse" />,
+      <rect key="body" x="35" y="35" width="30" height="35" fill={ghostColor} className="animate-pulse" />,
+      <rect key="wavy1" x="32" y="60" width="8" height="10" fill={ghostColor} className="animate-pulse" />,
+      <rect key="wavy2" x="60" y="55" width="8" height="15" fill={ghostColor} className="animate-pulse" />,
+      <rect key="wavy3" x="40" y="65" width="8" height="8" fill={ghostColor} className="animate-pulse" />
+    );
+  } else if (characterType === 1) {
+    // Jack-O-Lantern
+    const pumpkinColor = pumpkinColors[Math.floor(rand() * pumpkinColors.length)];
+    elements.push(
+      <rect key="stem" x="47" y="8" width="6" height="8" fill="#059669" className="animate-pulse" />,
+      <rect key="pumpkin-top" x="25" y="20" width="50" height="15" fill={pumpkinColor} className="animate-pulse" />,
+      <rect key="pumpkin-mid" x="20" y="30" width="60" height="25" fill={pumpkinColor} className="animate-pulse" />,
+      <rect key="pumpkin-bot" x="25" y="50" width="50" height="35" fill={pumpkinColor} className="animate-pulse" />,
+      <rect key="eye1" x="35" y="28" width="8" height="8" fill="#1f2937" className="animate-pulse" />,
+      <rect key="eye2" x="57" y="28" width="8" height="8" fill="#1f2937" className="animate-pulse" />,
+      <rect key="nose" x="47" y="38" width="6" height="8" fill="#1f2937" className="animate-pulse" />,
+      <rect key="mouth1" x="32" y="58" width="4" height="4" fill="#1f2937" className="animate-pulse" />,
+      <rect key="mouth2" x="40" y="60" width="6" height="6" fill="#1f2937" className="animate-pulse" />,
+      <rect key="mouth3" x="54" y="60" width="6" height="6" fill="#1f2937" className="animate-pulse" />,
+      <rect key="mouth4" x="64" y="58" width="4" height="4" fill="#1f2937" className="animate-pulse" />
+    );
+  } else if (characterType === 2) {
+    // Witch
+    const witchColor = witchColors[Math.floor(rand() * witchColors.length)];
+    const skinColor = skeletonColors[Math.floor(rand() * skeletonColors.length)];
+    elements.push(
+      <rect key="hat-top" x="35" y="10" width="30" height="12" fill={witchColor} className="animate-pulse" />,
+      <rect key="hat-brim" x="25" y="18" width="50" height="5" fill={witchColor} className="animate-pulse" />,
+      <rect key="hat-point" x="30" y="5" width="4" height="10" fill="#fbbf24" className="animate-pulse" />,
+      <rect key="head" x="38" y="20" width="24" height="28" fill={skinColor} className="animate-pulse" />,
+      <rect key="eye1" x="42" y="28" width="4" height="4" fill="#1f2937" className="animate-pulse" />,
+      <rect key="eye2" x="54" y="28" width="4" height="4" fill="#1f2937" className="animate-pulse" />,
+      <rect key="nose" x="48" y="34" width="4" height="4" fill="#1f2937" className="animate-pulse" />,
+      <rect key="mouth" x="46" y="40" width="8" height="3" fill="#dc2626" className="animate-pulse" />,
+      <rect key="body" x="32" y="45" width="36" height="40" fill={witchColor} className="animate-pulse" />,
+      <rect key="broom" x="25" y="50" width="3" height="35" fill="#7c2d12" className="animate-pulse" />,
+      <rect key="broom-base" x="20" y="80" width="13" height="6" fill="#059669" className="animate-pulse" />
+    );
+  } else if (characterType === 3) {
+    // Skeleton
+    const boneColor = skeletonColors[Math.floor(rand() * skeletonColors.length)];
+    elements.push(
+      <rect key="skull" x="38" y="15" width="24" height="28" fill={boneColor} className="animate-pulse" />,
+      <rect key="eye1" x="43" y="22" width="6" height="6" fill="#1f2937" className="animate-pulse" />,
+      <rect key="eye2" x="51" y="22" width="6" height="6" fill="#1f2937" className="animate-pulse" />,
+      <rect key="nose" x="46" y="32" width="8" height="10" fill="#1f2937" className="animate-pulse" />,
+      <rect key="jaw1" x="40" y="40" width="20" height="4" fill="#1f2937" className="animate-pulse" />,
+      <rect key="jaw2" x="42" y="44" width="4" height="6" fill="#1f2937" className="animate-pulse" />,
+      <rect key="jaw3" x="54" y="44" width="4" height="6" fill="#1f2937" className="animate-pulse" />,
+      <rect key="body" x="42" y="48" width="16" height="25" fill={boneColor} className="animate-pulse" />,
+      <rect key="rib1" x="44" y="52" width="4" height="8" fill="#1f2937" className="animate-pulse" />,
+      <rect key="rib2" x="52" y="52" width="4" height="8" fill="#1f2937" className="animate-pulse" />,
+      <rect key="arm1" x="35" y="50" width="5" height="20" fill={boneColor} className="animate-pulse" />,
+      <rect key="arm2" x="60" y="50" width="5" height="20" fill={boneColor} className="animate-pulse" />,
+      <rect key="leg1" x="43" y="73" width="6" height="15" fill={boneColor} className="animate-pulse" />,
+      <rect key="leg2" x="51" y="73" width="6" height="15" fill={boneColor} className="animate-pulse" />
+    );
+  } else if (characterType === 4) {
+    // Vampire
+    const vampireColor = vampireColors[Math.floor(rand() * vampireColors.length)];
+    const skinColor = skeletonColors[Math.floor(rand() * skeletonColors.length)];
+    elements.push(
+      <rect key="cape1" x="20" y="25" width="60" height="55" fill="#dc2626" className="animate-pulse" />,
+      <rect key="cape2" x="25" y="30" width="50" height="50" fill="#991b1b" className="animate-pulse" />,
+      <rect key="collar" x="38" y="32" width="24" height="6" fill="#ffffff" className="animate-pulse" />,
+      <rect key="head" x="38" y="18" width="24" height="28" fill={skinColor} className="animate-pulse" />,
+      <rect key="hair" x="35" y="15" width="30" height="15" fill={vampireColor} className="animate-pulse" />,
+      <rect key="eye1" x="42" y="28" width="4" height="4" fill="#dc2626" className="animate-pulse" />,
+      <rect key="eye2" x="54" y="28" width="4" height="4" fill="#dc2626" className="animate-pulse" />,
+      <rect key="nose" x="47" y="32" width="6" height="4" fill={skinColor} className="animate-pulse" />,
+      <rect key="mouth" x="47" y="38" width="6" height="4" fill="#dc2626" className="animate-pulse" />,
+      <rect key="tooth" x="50" y="40" width="2" height="3" fill="#ffffff" className="animate-pulse" />,
+      <rect key="body" x="42" y="45" width="16" height="25" fill="#1f2937" className="animate-pulse" />
+    );
+  } else if (characterType === 5) {
+    // Mummy
+    const wrapColor = mummyColors[Math.floor(rand() * mummyColors.length)];
+    elements.push(
+      <rect key="head-wrap" x="35" y="15" width="30" height="30" fill={wrapColor} className="animate-pulse" />,
+      <rect key="wrap1" x="37" y="17" width="4" height="4" fill="#d97706" className="animate-pulse" />,
+      <rect key="wrap2" x="47" y="19" width="4" height="4" fill="#d97706" className="animate-pulse" />,
+      <rect key="wrap3" x="59" y="21" width="4" height="4" fill="#d97706" className="animate-pulse" />,
+      <rect key="eye1" x="41" y="26" width="5" height="5" fill="#1f2937" className="animate-pulse" />,
+      <rect key="eye2" x="54" y="26" width="5" height="5" fill="#1f2937" className="animate-pulse" />,
+      <rect key="body" x="38" y="40" width="24" height="45" fill={wrapColor} className="animate-pulse" />,
+      <rect key="bandage1" x="40" y="42" width="4" height="6" fill="#d97706" className="animate-pulse" />,
+      <rect key="bandage2" x="50" y="45" width="4" height="6" fill="#d97706" className="animate-pulse" />,
+      <rect key="bandage3" x="58" y="48" width="4" height="6" fill="#d97706" className="animate-pulse" />,
+      <rect key="arm1" x="32" y="45" width="6" height="30" fill={wrapColor} className="animate-pulse" />,
+      <rect key="arm2" x="62" y="45" width="6" height="30" fill={wrapColor} className="animate-pulse" />,
+      <rect key="leg1" x="42" y="85" width="6" height="12" fill={wrapColor} className="animate-pulse" />,
+      <rect key="leg2" x="52" y="85" width="6" height="12" fill={wrapColor} className="animate-pulse" />
+    );
+  } else {
+    // Zombie
+    const zombieColor = zombieColors[Math.floor(rand() * zombieColors.length)];
+    const skinColor = mummyColors[Math.floor(rand() * mummyColors.length)];
+    elements.push(
+      <rect key="head" x="38" y="18" width="24" height="28" fill={skinColor} className="animate-pulse" />,
+      <rect key="rot1" x="40" y="22" width="3" height="3" fill="#dc2626" className="animate-pulse" />,
+      <rect key="rot2" x="55" y="25" width="3" height="3" fill="#dc2626" className="animate-pulse" />,
+      <rect key="eye1" x="42" y="26" width="4" height="5" fill="#d97706" className="animate-pulse" />,
+      <rect key="eye2" x="54" y="28" width="4" height="5" fill="#d97706" className="animate-pulse" />,
+      <rect key="nose" x="47" y="34" width="6" height="5" fill={zombieColor} className="animate-pulse" />,
+      <rect key="teeth1" x="45" y="40" width="2" height="3" fill="#ffffff" className="animate-pulse" />,
+      <rect key="teeth2" x="50" y="42" width="2" height="3" fill="#ffffff" className="animate-pulse" />,
+      <rect key="teeth3" x="53" y="41" width="2" height="3" fill="#ffffff" className="animate-pulse" />,
+      <rect key="body" x="40" y="45" width="20" height="35" fill={zombieColor} className="animate-pulse" />,
+      <rect key="torn1" x="38" y="48" width="4" height="4" fill="#92400e" className="animate-pulse" />,
+      <rect key="torn2" x="58" y="55" width="4" height="4" fill="#92400e" className="animate-pulse" />,
+      <rect key="arm1" x="32" y="48" width="6" height="25" fill={zombieColor} className="animate-pulse" />,
+      <rect key="arm2" x="62" y="50" width="6" height="25" fill={zombieColor} className="animate-pulse" />,
+      <rect key="leg1" x="42" y="80" width="6" height="18" fill={zombieColor} className="animate-pulse" />,
+      <rect key="leg2" x="52" y="80" width="6" height="18" fill={zombieColor} className="animate-pulse" />
+    );
+  }
+  
+  return (
+    <svg viewBox="0 0 100 100" className="w-full h-full">
+      {elements}
+    </svg>
+  );
+};
+
 export const Profile: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -426,6 +601,9 @@ export const Profile: React.FC = () => {
             <div className={`w-24 h-24 bg-gradient-to-br ${getCharacterGradient(profile?.avatar_url || '')} rounded-2xl flex items-center justify-center overflow-hidden ring-2 ring-emerald-500/20 ring-offset-2 ring-offset-slate-950`}>
               {profile?.avatar_url && CHARACTER_COMPONENTS[profile.avatar_url] ? (
                 CHARACTER_COMPONENTS[profile.avatar_url]
+              ) : profile?.avatar_url && profile.avatar_url.startsWith('random_') ? (
+                // Generate random avatar for random_ IDs
+                generateRandomPixelAvatar(profile.avatar_url)
               ) : (
                 <div className="text-white text-3xl font-bold">
                   {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}

@@ -543,34 +543,3 @@ class USDAApiService {
 
 // Export singleton instance
 export const usdaApi = new USDAApiService();
-
-// Debug function to test API key
-export const testUSDAConnection = async () => {
-  console.log('Testing USDA API connection...');
-  console.log('API Key status:', {
-    hasKey: !!USDA_API_KEY,
-    keyLength: USDA_API_KEY?.length || 0,
-    keyPreview: USDA_API_KEY ? `${USDA_API_KEY.substring(0, 8)}...` : 'undefined'
-  });
-  
-  if (!USDA_API_KEY) {
-    console.error('No API key found! Please add VITE_USDA_API_KEY to .env.local');
-    return false;
-  }
-  
-  try {
-    const response = await fetch(`${USDA_BASE_URL}/foods/search?query=apple&api_key=${USDA_API_KEY}&pageSize=1`);
-    const data = await response.json();
-    
-    if (response.ok) {
-      console.log('✅ USDA API connection successful!', data);
-      return true;
-    } else {
-      console.error('❌ USDA API error:', data);
-      return false;
-    }
-  } catch (error) {
-    console.error('❌ USDA API connection failed:', error);
-    return false;
-  }
-};

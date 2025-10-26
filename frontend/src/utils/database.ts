@@ -10,8 +10,20 @@ export interface Profile {
   goal_carbs: number;
   goal_fats: number;
   allergies: string;
+  // New fields for BMI and hydration
+  weight?: number; // kg
+  height?: number; // cm
+  goal_water?: number; // ml per day
   created_at: string;
   updated_at: string;
+}
+
+export interface WaterIntake {
+  id: string;
+  user_id: string;
+  amount_ml: number;
+  date: string;
+  created_at: string;
 }
 
 export interface Meal {
@@ -80,12 +92,18 @@ export const getProfile = async (userId: string): Promise<Profile | null> => {
 };
 
 export const updateProfile = async (userId: string, updates: Partial<Profile>): Promise<Profile | null> => {
+  console.log('updateProfile called with:', { userId, updates });
+  
   const { data, error } = await supabase
     .from('profiles')
     .update(updates)
     .eq('id', userId)
     .select()
     .single();
+    
+  if (error) {
+    console.error('Error updating profile:', error);
+  }
 
   if (error) {
     console.error('Error updating profile:', error);
@@ -371,4 +389,101 @@ export const calculateDailyStats = (meals: Meal[], goals: Partial<Profile> = {})
     goal_carbs: goals.goal_carbs || 250,
     goal_fats: goals.goal_fats || 67,
   };
+};
+
+// Water/Hydration tracking functions
+export const addWaterIntake = async (userId: string, amount_ml: number): Promise<WaterIntake | null> => {
+  const today = new Date().toISOString().split('T')[0];
+  console.log('addWaterIntake called:', { userId, amount_ml, date: today });
+  
+  // First, check if there's already an entry for today
+  const { data: existingData, error: selectError } = await supabase
+    .from('water_intake')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('date', today);
+
+  // Handle error (but not 404 - that's expected if no entry exists)
+  if (selectError && selectError.code !== 'PGRST116') {
+    console.error('Error checking existing water intake:', selectError);
+    return null;
+  }
+
+  // Check if we got any results
+  const existing = existingData && existingData.length > 0 ? existingData[0] : null;
+  console.log('Existing water intake:', existing);
+
+  if (existing) {
+    // Update existing entry
+    const { data, error } = await supabase
+      .from('water_intake')
+      .update({ amount_ml: existing.amount_ml + amount_ml })
+      .eq('id', existing.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating water intake:', error);
+      return null;
+    }
+    console.log('Updated water intake:', data);
+    return data;
+  } else {
+    // Create new entry
+    const { data, error } = await supabase
+      .from('water_intake')
+      .insert({
+        user_id: userId,
+        amount_ml,
+        date: today
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding water intake:', error);
+      return null;
+    }
+    console.log('Created water intake:', data);
+    return data;
+  }
+};
+
+export const getWaterIntake = async (userId: string, date?: string): Promise<number> => {
+  const targetDate = date || new Date().toISOString().split('T')[0];
+  
+  const { data, error } = await supabase
+    .from('water_intake')
+    .select('amount_ml')
+    .eq('user_id', userId)
+    .eq('date', targetDate);
+
+  // Handle case where no rows exist (404 error is expected)
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching water intake:', error);
+    return 0;
+  }
+
+  // If no data or empty array, return 0
+  if (!data || data.length === 0) {
+    return 0;
+  }
+
+  return data[0].amount_ml || 0;
+};
+
+// BMI calculation function
+export const calculateBMI = (weight: number, height: number): number => {
+  if (!weight || !height || height === 0) return 0;
+  const heightInMeters = height / 100;
+  return Math.round((weight / (heightInMeters * heightInMeters)) * 10) / 10;
+};
+
+// Get BMI category
+export const getBMICategory = (bmi: number): { label: string; color: string } => {
+  if (bmi === 0) return { label: 'N/A', color: 'text-gray-500' };
+  if (bmi < 18.5) return { label: 'Underweight', color: 'text-blue-500' };
+  if (bmi < 25) return { label: 'Normal', color: 'text-green-500' };
+  if (bmi < 30) return { label: 'Overweight', color: 'text-yellow-500' };
+  return { label: 'Obese', color: 'text-red-500' };
 };

@@ -26,9 +26,8 @@ import { Login } from "./components/auth/Login";
 import { Register } from "./components/auth/Register";
 import { Onboarding } from "./components/auth/Onboarding";
 import { Dashboard } from "./components/views/Dashboard";
-import { USDATest } from "./components/views/USDATest";
 import { Cookbook } from "./components/views/Cookbook";
-import { ProfileWithDebugToggle } from "./components/views/ProfileWithDebugToggle";
+import { Profile } from "./components/views/Profile";
 import { EditProfile } from "./components/views/EditProfile";
 import { DietaryPreferences } from "./components/views/DietaryPreferences";
 import { Notifications } from "./components/views/Notifications";
@@ -114,7 +113,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "/profile",
-        element: React.createElement(ProtectedLayout, null, React.createElement(ProfileWithDebugToggle)),
+        element: React.createElement(ProtectedLayout, null, React.createElement(Profile)),
       },
       {
         path: "/edit-profile",
@@ -131,10 +130,6 @@ export const router = createBrowserRouter([
       {
         path: "/privacy",
         element: React.createElement(ProtectedLayout, null, React.createElement(Privacy)),
-      },
-      {
-        path: "/usda-test",
-        element: React.createElement(ProtectedLayout, null, React.createElement(USDATest)),
       },
     ],
   },

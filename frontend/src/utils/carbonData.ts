@@ -92,37 +92,6 @@ export const carbonFootprint: Record<string, number> = {
 }
 
 /**
- * Calculate carbon footprint for a list of food items
- * @param {array} foodItems - Array of food item names
- * @param {number} portionSize - Portion size in grams (default 200g)
- * @returns {number} Total carbon footprint in kg
- */
-export function calculateMealCarbon(foodItems: string[], portionSize: number = 200): number {
-  if (!foodItems || foodItems.length === 0) return 0
-  
-  let totalCarbon = 0
-  
-  foodItems.forEach(item => {
-    const normalizedItem = item.toLowerCase().trim().replace(/\s+/g, ' ')
-    
-    // Try exact match first
-    let carbonPer100g = carbonFootprint[normalizedItem]
-    
-    // If no exact match, try partial match
-    if (!carbonPer100g) {
-      const matchedKey = Object.keys(carbonFootprint).find(key => 
-        normalizedItem.includes(key) || key.includes(normalizedItem)
-      )
-      carbonPer100g = matchedKey ? carbonFootprint[matchedKey] : carbonFootprint.default
-    }
-    
-    totalCarbon += (carbonPer100g * portionSize) / 100
-  })
-  
-  return parseFloat(totalCarbon.toFixed(3))
-}
-
-/**
  * Get sustainable alternatives for high-carbon foods
  * @param {array} foodItems - Array of food items
  * @returns {array} Array of alternative suggestions
@@ -132,73 +101,237 @@ export interface Alternative {
   suggestion: string;
   carbonSaved: number;
   healthBenefit: string;
+  dietaryType: 'vegan' | 'vegetarian' | 'pescatarian' | 'flexitarian';
+  proteinRich?: boolean;
 }
 
 export function getSustainableAlternatives(foodItems: string[]): Alternative[] {
   const alternatives: Alternative[] = []
   
-  const alternativeMap: Record<string, Omit<Alternative, 'original'>> = {
-    beef: {
-      suggestion: 'lentils or chickpeas',
-      carbonSaved: 2.3,
-      healthBenefit: 'High in fiber and plant-based protein, lower cholesterol'
-    },
-    'ground beef': {
-      suggestion: 'Beyond Meat or lentils',
-      carbonSaved: 2.3,
-      healthBenefit: 'Lower saturated fat and cholesterol'
-    },
-    lamb: {
-      suggestion: 'chicken or tofu',
-      carbonSaved: 1.8,
-      healthBenefit: 'Lower saturated fat and calories'
-    },
-    pork: {
-      suggestion: 'chicken or turkey',
-      carbonSaved: 0.1,
-      healthBenefit: 'Leaner protein option'
-    },
-    cheese: {
-      suggestion: 'nutritional yeast or cashew cheese',
-      carbonSaved: 1.2,
-      healthBenefit: 'Lower cholesterol and saturated fat, dairy-free'
-    },
-    butter: {
-      suggestion: 'avocado or olive oil',
-      carbonSaved: 0.9,
-      healthBenefit: 'Heart-healthy unsaturated fats, vitamin E'
-    },
-    milk: {
-      suggestion: 'oat milk or almond milk',
-      carbonSaved: 0.2,
-      healthBenefit: 'Lactose-free, lower calories, fortified with vitamins'
-    },
-    rice: {
-      suggestion: 'quinoa or bulgur wheat',
-      carbonSaved: 0.3,
-      healthBenefit: 'Higher protein and fiber, complete amino acids'
-    },
-    salmon: {
-      suggestion: 'mackerel or sardines',
-      carbonSaved: 0.5,
-      healthBenefit: 'Still rich in omega-3, more sustainable'
+  // Helper function to calculate carbon footprint (matching USDA API logic)
+  const calculateCarbonFromName = (foodName: string): number => {
+    const normalized = foodName.toLowerCase().trim().replace(/\s+/g, ' ')
+    
+    // Try exact match first
+    if (carbonFootprint[normalized]) {
+      return carbonFootprint[normalized]
+    }
+    
+    // Try partial match
+    const matchedKey = Object.keys(carbonFootprint).find(key => 
+      normalized.includes(key) || key.includes(normalized)
+    )
+    
+    if (matchedKey) {
+      return carbonFootprint[matchedKey]
+    }
+    
+    // Fallback to USDA-style calculation (estimate based on food type)
+    // This mirrors what usdaApi.calculateCarbonFootprint does
+    const baseCarbonPerCalorie = 0.0005 // kg CO2 per calorie
+    let multiplier = 1
+    
+    if (normalized.includes('beef') || normalized.includes('meat') || normalized.includes('steak') || 
+        normalized.includes('pork') || normalized.includes('bacon')) {
+      multiplier = 3.0 // High carbon
+    } else if (normalized.includes('chicken') || normalized.includes('poultry') || normalized.includes('turkey')) {
+      multiplier = 1.5
+    } else if (normalized.includes('fish') || normalized.includes('salmon') || normalized.includes('tuna') || 
+               normalized.includes('shrimp') || normalized.includes('seafood')) {
+      multiplier = 2.0
+    } else if (normalized.includes('dairy') || normalized.includes('milk') || normalized.includes('cheese') || 
+               normalized.includes('butter') || normalized.includes('yogurt') || normalized.includes('cream')) {
+      multiplier = 1.2
+    } else if (normalized.includes('vegetable') || normalized.includes('fruit') || normalized.includes('grain') ||
+               normalized.includes('broccoli') || normalized.includes('carrot') || normalized.includes('lettuce') ||
+               normalized.includes('spinach') || normalized.includes('apple') || normalized.includes('banana') ||
+               normalized.includes('rice') || normalized.includes('bread') || normalized.includes('pasta') ||
+               normalized.includes('quinoa') || normalized.includes('oats')) {
+      multiplier = 0.5 // Low carbon
+    }
+    
+    // Estimate calories (rough average: 100-300 per 100g depending on type)
+    const estimatedCalories = multiplier >= 2.0 ? 200 : 150
+    const carbonPer100g = (estimatedCalories * baseCarbonPerCalorie * multiplier).toFixed(2)
+    
+    return parseFloat(carbonPer100g)
+  }
+  
+  // Helper function to determine dietary type
+  const getDietaryType = (food: string): 'vegan' | 'vegetarian' | 'pescatarian' | 'flexitarian' => {
+    const meatFish = ['beef', 'chicken', 'pork', 'lamb', 'turkey', 'bacon', 'steak', 'ground beef', 'salmon', 'tuna', 'fish', 'shrimp']
+    const dairy = ['cheese', 'milk', 'butter', 'yogurt', 'cream', 'ice cream']
+    const fish = ['salmon', 'tuna', 'fish', 'shrimp', 'mackerel', 'sardines']
+    
+    const normalized = food.toLowerCase()
+    
+    if (meatFish.some(m => normalized.includes(m))) {
+      if (fish.some(f => normalized.includes(f))) {
+        return 'pescatarian'
+      }
+      return 'flexitarian'
+    }
+    if (dairy.some(d => normalized.includes(d))) {
+      return 'vegetarian'
+    }
+    return 'vegan'
+  }
+  
+  // Helper function to check if food is protein-rich
+  const isProteinRich = (food: string): boolean => {
+    const proteins = ['beef', 'chicken', 'pork', 'lamb', 'turkey', 'fish', 'salmon', 'tuna', 'shrimp', 
+                      'tofu', 'tempeh', 'lentils', 'beans', 'chickpeas', 'black beans', 'kidney beans', 
+                      'eggs', 'quinoa']
+    const normalized = food.toLowerCase()
+    return proteins.some(p => normalized.includes(p))
+  }
+  
+  // Helper function to get health benefit based on carbon savings and food type
+  const getHealthBenefit = (originalFood: string, _suggestedFood: string, carbonSaved: number): string => {
+    const meatProteins = ['beef', 'chicken', 'pork', 'lamb', 'turkey', 'bacon', 'steak']
+    const dairy = ['cheese', 'milk', 'butter', 'yogurt', 'cream']
+    
+    const normalized = originalFood.toLowerCase()
+    
+    if (meatProteins.some(m => normalized.includes(m))) {
+      return 'Lower saturated fat, heart-healthy option'
+    }
+    if (dairy.some(d => normalized.includes(d))) {
+      return 'Dairy-free, lactose-free option'
+    }
+    if (carbonSaved > 1) {
+      return 'Significantly lower environmental impact'
+    }
+    if (carbonSaved > 0.5) {
+      return 'Better for the environment and your health'
+    }
+    return 'More nutritious and sustainable option'
+  }
+  
+  // Simple weighted scoring model to find best alternatives
+  const findBestAlternatives = (originalFood: string): Omit<Alternative, 'original'> | null => {
+    const normalizedOriginal = originalFood.toLowerCase().trim().replace(/\s+/g, ' ')
+    
+    // Get carbon footprint of original food (using new helper function)
+    const originalCarbon = calculateCarbonFromName(originalFood)
+    
+    // Find all foods with lower carbon footprint
+    // First, check foods in our database
+    const betterAlternatives: Array<{food: string, carbon: number}> = []
+    
+    for (const [food, carbon] of Object.entries(carbonFootprint)) {
+      if (food === 'default') continue
+      
+      const normalizedFood = food.toLowerCase()
+      
+      // Skip if it's the same food or similar
+      if (normalizedFood === normalizedOriginal || 
+          normalizedFood.includes(normalizedOriginal) || 
+          normalizedOriginal.includes(normalizedFood)) {
+        continue
+      }
+      
+      // Only include foods with significantly lower carbon (at least 10% reduction)
+      if (carbon < originalCarbon * 0.9) {
+        betterAlternatives.push({ food, carbon })
+      }
+    }
+    
+    // Also add common alternatives not in our database (calculating their carbon dynamically)
+    const commonAlternatives = [
+      'tofu', 'tempeh', 'seitan', 'beans', 'lentils', 'chickpeas', 'quinoa',
+      'mushrooms', 'nuts', 'seeds', 'olive oil', 'avocado', 'sweet potato',
+      'oats', 'barley', 'brown rice', 'whole wheat pasta'
+    ]
+    
+    for (const food of commonAlternatives) {
+      // Skip if already in betterAlternatives
+      if (betterAlternatives.some(alt => alt.food === food)) continue
+      
+      // Skip if it's the same food
+      const normalizedFood = food.toLowerCase()
+      if (normalizedFood === normalizedOriginal || 
+          normalizedFood.includes(normalizedOriginal) || 
+          normalizedOriginal.includes(normalizedFood)) {
+        continue
+      }
+      
+      // Calculate carbon for this alternative
+      const carbon = calculateCarbonFromName(food)
+      
+      // Only include if significantly lower carbon
+      if (carbon < originalCarbon * 0.9) {
+        betterAlternatives.push({ food, carbon })
+      }
+    }
+    
+    if (betterAlternatives.length === 0) return null
+    
+    // Score each alternative based on multiple factors
+    const scoredAlternatives = betterAlternatives.map(({ food, carbon }) => {
+      let score = 0
+      
+      // 40% weight: Carbon savings (more is better)
+      const carbonSaved = originalCarbon - carbon
+      score += (carbonSaved / originalCarbon) * 40
+      
+      // 30% weight: Similarity in food category (protein for protein, grain for grain, etc.)
+      const categories = {
+        protein: ['beef', 'chicken', 'pork', 'lamb', 'turkey', 'fish', 'salmon', 'tuna', 'shrimp', 'tofu', 'tempeh', 'lentils', 'beans', 'chickpeas', 'eggs'],
+        dairy: ['cheese', 'milk', 'butter', 'yogurt', 'cream'],
+        grain: ['rice', 'bread', 'pasta', 'wheat', 'oats', 'quinoa'],
+        produce: ['broccoli', 'carrots', 'tomatoes', 'lettuce', 'spinach', 'kale', 'potatoes', 'apples', 'bananas']
+      }
+      
+      const originalCategory = Object.entries(categories).find(([, foods]) => 
+        foods.some(f => normalizedOriginal.includes(f))
+      )?.[0]
+      
+      const foodCategory = Object.entries(categories).find(([, foods]) => 
+        foods.some(f => food.includes(f))
+      )?.[0]
+      
+      if (originalCategory && foodCategory === originalCategory) {
+        score += 30
+      }
+      
+      // 20% weight: Protein content match (if original is protein-rich)
+      if (isProteinRich(originalFood) && isProteinRich(food)) {
+        score += 20
+      }
+      
+      // 10% weight: Prefer lower absolute carbon footprint
+      score += (1 / (carbon + 1)) * 10
+      
+      return { food, carbon, carbonSaved, score }
+    })
+    
+    // Sort by score and get the top alternative
+    scoredAlternatives.sort((a, b) => b.score - a.score)
+    
+    if (scoredAlternatives.length === 0) return null
+    
+    const best = scoredAlternatives[0]
+    
+    return {
+      suggestion: best.food.charAt(0).toUpperCase() + best.food.slice(1),
+      carbonSaved: parseFloat(best.carbonSaved.toFixed(2)),
+      healthBenefit: getHealthBenefit(originalFood, best.food, best.carbonSaved),
+      dietaryType: getDietaryType(best.food),
+      proteinRich: isProteinRich(best.food)
     }
   }
   
+  // Find alternatives for each food item
   foodItems.forEach(item => {
-    const normalizedItem = item.toLowerCase().trim()
+    const alternative = findBestAlternatives(item)
     
-    // Check for exact or partial matches
-    Object.keys(alternativeMap).forEach(key => {
-      if (normalizedItem.includes(key) || key.includes(normalizedItem)) {
-        if (!alternatives.find(alt => alt.original === item)) {
-          alternatives.push({
-            original: item,
-            ...alternativeMap[key]
-          })
-        }
-      }
-    })
+    if (alternative) {
+      alternatives.push({
+        original: item,
+        ...alternative
+      })
+    }
   })
   
   return alternatives

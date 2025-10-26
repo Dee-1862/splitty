@@ -58,13 +58,7 @@ class GeminiApiService {
           contents: [{
             parts: [
               {
-                text: `Analyze this image and identify all food ingredients visible. For each ingredient, provide:
-                1. The name of the ingredient
-                2. An estimated quantity (e.g., "200g", "1 cup", "2 pieces")
-                3. Your confidence level (0-1)
-                
-                Return the response as a JSON array with this structure:
-                [{"name": "ingredient name", "quantity": "estimated amount", "confidence": 0.95}]`
+                text: `分析图片中的食材。对每个食材提供：名称、预估数量、置信度(0-1)。用中文理解。返回JSON数组：[{"name":"ingredient name","quantity":"estimated amount","confidence":0.95}]。输出用英文。`
               },
               {
                 inline_data: {
@@ -158,32 +152,34 @@ class GeminiApiService {
     }
 
     try {
-      const prompt = `Create a ${mode === 'cook' ? 'cooked' : 'fresh/assembled'} recipe using these ingredients: ${ingredients.join(', ')}.${preferenceContext}
+      // Using Chinese for prompt to save ~30% tokens (Chinese is more token-efficient than English)
+      // Request output in English for consistency
+      const prompt = `用这些食材${mode === 'cook' ? '烹饪' : '制作'}菜谱：${ingredients.join('、')}。${preferenceContext} 用中文理解，但用英文回复。
 
-      Please provide a detailed recipe in JSON format with this structure:
-      {
-        "title": "Recipe Name",
-        "description": "Brief description of the dish",
-        "ingredients": ["ingredient 1", "ingredient 2", ...],
-        "instructions": ["step 1", "step 2", ...],
-        "prep_time": "X minutes",
-        "servings": X,
-        "calories_per_serving": XXX,
-        "protein_per_serving": XX.X,
-        "carbs_per_serving": XX.X,
-        "fats_per_serving": XX.X,
-        "carbon_per_serving": X.XX
-      }
+请以JSON格式返回：
+{
+  "title": "Recipe Name",
+  "description": "Brief description",
+  "ingredients": ["ingredient 1", "ingredient 2"],
+  "instructions": ["step 1", "step 2"],
+  "prep_time": "X minutes",
+  "servings": X,
+  "calories_per_serving": XXX,
+  "protein_per_serving": XX.X,
+  "carbs_per_serving": XX.X,
+  "fats_per_serving": XX.X,
+  "carbon_per_serving": X.XX
+}
 
-      IMPORTANT: Calculate accurate nutritional values based on the actual ingredients:
-      - Estimate realistic servings based on ingredient quantities
-      - Calculate calories_per_serving: Total calories divided by servings
-      - Calculate protein_per_serving: Total protein in grams divided by servings  
-      - Calculate carbs_per_serving: Total carbohydrates in grams divided by servings
-      - Calculate fats_per_serving: Total fats in grams divided by servings
-      - Calculate carbon_per_serving: Carbon footprint per serving based on ingredients and cooking method
-      
-      Use realistic nutritional values based on the actual ingredients provided.`;
+CRITICAL NUTRITION VALIDATION RULES:
+1. Calories MUST match: calories = (protein × 4) + (carbs × 4) + (fats × 9) (±10% tolerance)
+2. For typical recipes, ensure realistic values:
+   - Protein: 15-30g per serving (unless high-protein specified)
+   - Carbs: 30-60g per serving
+   - Fats: 10-20g per serving
+   - Calories: 200-600 per serving (typical range)
+3. If recipe serves 1 person (servings=1), use TOTAL values. If serves 4, divide by 4 for per_serving.
+4. Calculate carbon_per_serving based on ingredients (meat=high, vegetables=low)`;
 
       console.log('Gemini API - Recipe generation request:', {
         prompt: prompt.substring(0, 200) + '...',
@@ -268,6 +264,43 @@ class GeminiApiService {
         throw new Error('Invalid response format from Gemini API. The service may be experiencing issues.');
       }
       
+      // Validate and fix nutritional values
+      let {
+        calories_per_serving = 300,
+        protein_per_serving = 15,
+        carbs_per_serving = 40,
+        fats_per_serving = 10,
+        carbon_per_serving = 0.3,
+        servings = 4
+      } = recipeData;
+      
+      // Calculate expected calories based on macros
+      const expectedCalories = (protein_per_serving * 4) + (carbs_per_serving * 4) + (fats_per_serving * 9);
+      
+      // Check if there's a discrepancy
+      const calorieDifference = Math.abs(calories_per_serving - expectedCalories);
+      const calorieErrorPercent = (calorieDifference / expectedCalories) * 100;
+      
+      // If discrepancy is more than 10%, adjust calories to match macros
+      if (calorieErrorPercent > 10) {
+        console.warn(`Calorie mismatch detected: ${calories_per_serving} vs expected ${expectedCalories.toFixed(0)}. Adjusting...`);
+        calories_per_serving = Math.round(expectedCalories);
+      }
+      
+      // Ensure realistic values (caps)
+      if (protein_per_serving > 50) {
+        console.warn(`Unusually high protein: ${protein_per_serving}g. Capping at 50g.`);
+        protein_per_serving = 50;
+      }
+      if (carbs_per_serving > 100) {
+        console.warn(`Unusually high carbs: ${carbs_per_serving}g. Capping at 100g.`);
+        carbs_per_serving = 100;
+      }
+      if (fats_per_serving > 40) {
+        console.warn(`Unusually high fats: ${fats_per_serving}g. Capping at 40g.`);
+        fats_per_serving = 40;
+      }
+      
       return {
         id: Date.now().toString(),
         title: recipeData.title,
@@ -275,12 +308,12 @@ class GeminiApiService {
         ingredients: recipeData.ingredients,
         instructions: recipeData.instructions,
         prep_time: recipeData.prep_time,
-        servings: recipeData.servings || 4,
-        calories_per_serving: recipeData.calories_per_serving || 200,
-        protein_per_serving: recipeData.protein_per_serving || 10,
-        carbs_per_serving: recipeData.carbs_per_serving || 25,
-        fats_per_serving: recipeData.fats_per_serving || 8,
-        carbon_per_serving: recipeData.carbon_per_serving || 0.5,
+        servings,
+        calories_per_serving,
+        protein_per_serving,
+        carbs_per_serving,
+        fats_per_serving,
+        carbon_per_serving,
       };
 
     } catch (error) {

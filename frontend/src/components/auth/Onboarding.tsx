@@ -95,7 +95,9 @@ export const Onboarding: React.FC = () => {
         goal_protein: goalProtein,
         goal_carbs: Math.round(tdee * 0.45),
         goal_fats: Math.round(tdee * 0.25),
-        allergies: formData.allergies.trim()
+        allergies: formData.allergies.trim(),
+        height: height,
+        weight: weight
       });
 
       // Create user goal

@@ -35,7 +35,6 @@ export const DietaryPreferences: React.FC = () => {
   const [goalForm, setGoalForm] = useState({
     goal_type: 'maintenance' as 'maintenance' | 'weight_loss' | 'weight_gain' | 'muscle_gain',
     target_weight: 0,
-    current_weight: 0,
     target_date: ''
   });
 
@@ -69,7 +68,6 @@ export const DietaryPreferences: React.FC = () => {
         setGoalForm({
           goal_type: activeGoal.goal_type,
           target_weight: activeGoal.target_weight || 0,
-          current_weight: activeGoal.current_weight || 0,
           target_date: activeGoal.target_date || ''
         });
       }
@@ -129,12 +127,12 @@ export const DietaryPreferences: React.FC = () => {
         await updateUserGoal(goal.id, { is_active: false });
       }
 
-      // Add new goal
+      // Add new goal - use profile weight as current weight
       const newGoal = await addUserGoal({
         user_id: user.id,
         goal_type: goalForm.goal_type,
         target_weight: goalForm.target_weight > 0 ? goalForm.target_weight : 0,
-        current_weight: goalForm.current_weight > 0 ? goalForm.current_weight : 0,
+        current_weight: profile?.weight || 0,
         target_date: goalForm.target_date || '',
         is_active: true
       });
@@ -165,7 +163,7 @@ export const DietaryPreferences: React.FC = () => {
     const { name, value } = e.target;
     setGoalForm(prev => ({
       ...prev,
-      [name]: name.includes('weight') || name === 'target_date' ? value : value
+      [name]: name === 'target_weight' ? parseFloat(value) || 0 : name === 'target_date' ? value : value
     }));
   };
 
@@ -337,22 +335,7 @@ export const DietaryPreferences: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-3 uppercase tracking-wide">
-                      Current Weight (kg)
-                    </label>
-                    <input
-                      type="number"
-                      name="current_weight"
-                      value={goalForm.current_weight}
-                      onChange={handleGoalChange}
-                      className="w-full p-4 border border-slate-700/50 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-800/50 text-white text-lg font-semibold"
-                      min="30"
-                      max="300"
-                      step="0.1"
-                    />
-                  </div>
+                {goalForm.goal_type !== 'maintenance' && (
                   <div>
                     <label className="block text-sm font-medium text-slate-400 mb-3 uppercase tracking-wide">
                       Target Weight (kg)
@@ -366,9 +349,13 @@ export const DietaryPreferences: React.FC = () => {
                       min="30"
                       max="300"
                       step="0.1"
+                      required
                     />
+                    <p className="text-xs text-slate-500 mt-2">
+                      Current weight: {profile?.weight ? `${profile.weight} kg` : 'Not set in Profile'}
+                    </p>
                   </div>
-                </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-slate-400 mb-3 uppercase tracking-wide">

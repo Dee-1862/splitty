@@ -113,7 +113,7 @@ export const Cookbook: React.FC = () => {
   const getAvailableNutrientTypes = () => {
     const selectedTypes = nutritionalFilters.map(f => f.type);
     const allTypes = [
-      { value: 'calories', label: '🔥 Calories', unit: 'kcal', defaultMax: 1000 },
+      { value: 'calories', label: '🔥 Calories', unit: 'cal', defaultMax: 1000 },
       { value: 'protein', label: '🥩 Protein', unit: 'grams', defaultMax: 50 },
       { value: 'carbs', label: '🍞 Carbs', unit: 'grams', defaultMax: 100 },
       { value: 'fats', label: '🧈 Fats', unit: 'grams', defaultMax: 30 },
@@ -325,17 +325,20 @@ export const Cookbook: React.FC = () => {
         ...manualIngredients.split(',').map(ing => ing.trim()).filter(ing => ing)
       ];
 
-      // Create preference context for recipe generation
+      // Create preference context for recipe generation (using Chinese to save tokens)
       const preferenceContext = foodPreferences.length > 0 
-        ? `\n\nPlease consider these preferences: ${foodPreferences.map(pref => {
+      // ? `\n\nPlease consider these preferences: ${foodPreferences.map(pref => {
+        ? `\n考虑偏好：${foodPreferences.map(pref => {
             const option = foodPreferenceOptions.find(opt => opt.id === pref);
             return option ? option.description : pref;
-          }).join(', ')}`
+          //}).join(', ')}`
+          }).join('、')}`
         : '';
 
-      // Add allergy restrictions to the context
+      // Add allergy restrictions to the context (using Chinese to save tokens)
       const allergyContext = userProfile?.allergies && userProfile.allergies.trim()
-        ? `\n\nIMPORTANT: The user has the following allergies and dietary restrictions that MUST be avoided: ${userProfile.allergies}. Do NOT include any of these ingredients in the recipe. If any of the provided ingredients contain these allergens, suggest alternatives or omit them entirely.`
+      //? `\n\nIMPORTANT: The user has the following allergies and dietary restrictions that MUST be avoided: ${userProfile.allergies}. Do not include these ingredients in your recipes.
+        ? `\n\n重要：用户对以下过敏原过敏，必须避免：${userProfile.allergies}。不要在食谱中包含这些成分。`
         : '';
 
       const fullContext = preferenceContext + allergyContext;
@@ -744,7 +747,7 @@ const RecipeCard: React.FC<{ recipe: any; onSave: (recipe: any) => void }> = ({ 
         <div className="mb-6">
           <h4 className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide">Nutrition (per serving)</h4>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <NutritionStat icon="🔥" label="Calories" value={recipe.calories_per_serving || 0} unit="kcal" color="yellow" />
+            <NutritionStat icon="🔥" label="Calories" value={recipe.calories_per_serving || 0} unit="cal" color="yellow" />
             <NutritionStat icon="🥩" label="Protein" value={recipe.protein_per_serving || 0} unit="g" color="purple" />
             <NutritionStat icon="🍞" label="Carbs" value={recipe.carbs_per_serving || 0} unit="g" color="orange" />
             <NutritionStat icon="🧈" label="Fats" value={recipe.fats_per_serving || 0} unit="g" color="red" />
@@ -873,7 +876,7 @@ const SavedRecipeCard: React.FC<{
             <p className="text-sm text-slate-400 mb-4">{recipe.description}</p>
            
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              <NutritionStat icon="🔥" label="Calories" value={recipe.calories_per_serving} unit="kcal" color="yellow" />
+              <NutritionStat icon="🔥" label="Calories" value={recipe.calories_per_serving} unit="cal" color="yellow" />
               <NutritionStat icon="🥩" label="Protein" value={recipe.protein_per_serving} unit="g" color="purple" />
               <NutritionStat icon="🍞" label="Carbs" value={recipe.carbs_per_serving} unit="g" color="orange" />
            <NutritionStat icon="🧈" label="Fats" value={recipe.fats_per_serving} unit="g" color="red" />
