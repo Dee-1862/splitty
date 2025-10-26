@@ -11,20 +11,22 @@ export const Notifications: React.FC = () => {
         
         {/* Minimal Header */}
         <div className="mb-12 sm:mb-16">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-start gap-4 mb-4">
             <button
               onClick={() => navigate('/profile')}
-              className="p-2 hover:bg-slate-800/50 rounded-xl transition-colors text-slate-400 hover:text-white"
+              className="p-2 hover:bg-slate-800/50 rounded-xl transition-colors text-slate-400 hover:text-white shrink-0"
             >
               <ArrowLeft size={20} />
             </button>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-white tracking-tight">
-              Notifications
-            </h1>
+            <div className="flex-1 text-center sm:text-left">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-white tracking-tight">
+                Notifications
+              </h1>
+              <p className="text-sm text-slate-500 font-medium tracking-wide mt-1">
+                Customize your reminders and alerts
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-slate-500 font-medium tracking-wide">
-            Customize your reminders and alerts
-          </p>
         </div>
 
         <div className="space-y-6">

@@ -386,14 +386,14 @@ export const Cookbook: React.FC = () => {
     <div className="min-h-screen bg-slate-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         
-        {/* Minimal Header */}
-        <div className="mb-12 sm:mb-16">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-white tracking-tight mb-2">
-            Cookbook
-          </h1>
-          <p className="text-sm text-slate-500 font-medium tracking-wide">
-            AI-powered recipe generation from ingredients
-          </p>
+                {/* Minimal Header */}
+        <div className="mb-12 sm:mb-16 text-center sm:text-left">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-white tracking-tight mb-2">
+            Cookbook
+          </h1>
+          <p className="text-sm text-slate-500 font-medium tracking-wide">
+            AI-powered recipe generation from ingredients
+          </p>
       </div>
 
         {/* Mode Selection Tabs */}

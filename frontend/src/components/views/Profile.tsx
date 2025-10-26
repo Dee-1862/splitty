@@ -583,7 +583,7 @@ export const Profile: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         
         {/* Minimal Header */}
-        <div className="mb-12 sm:mb-16">
+        <div className="mb-12 sm:mb-16 text-center sm:text-left">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-white tracking-tight mb-2">
             Profile
           </h1>
@@ -882,7 +882,7 @@ const StatCard: React.FC<{
     <div className="relative bg-slate-900/30 backdrop-blur-xl rounded-2xl border border-slate-800/50 p-6 overflow-hidden">
       <div className={`absolute inset-0 bg-gradient-to-br ${colorMap[color]} to-transparent pointer-events-none`}></div>
       
-      <div className="relative z-10">
+      <div className="relative z-10 text-center">
         <div className="text-3xl mb-3">{icon}</div>
         <div className="text-2xl font-bold text-white mb-1 transition-all duration-3000 ease-out">{value}</div>
         <div className="text-xs text-slate-400 uppercase tracking-wide font-medium">{label}</div>
