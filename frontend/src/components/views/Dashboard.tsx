@@ -23,6 +23,12 @@ export const Dashboard: React.FC = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
+  const [animatedProgress, setAnimatedProgress] = useState({
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fats: 0
+  });
   const [dailyStats, setDailyStats] = useState<DailyStats>({
     total_calories: 0,
     total_protein: 0,
@@ -80,6 +86,29 @@ export const Dashboard: React.FC = () => {
     }
   }, [user?.id, fetchData]); // Include fetchData in dependencies
 
+  const calorieProgress = Math.min((dailyStats.total_calories / dailyStats.goal_calories) * 100, 100);
+  const proteinProgress = Math.min((dailyStats.total_protein / dailyStats.goal_protein) * 100, 100);
+  const carbsProgress = Math.min((dailyStats.total_carbs / dailyStats.goal_carbs) * 100, 100);
+  const fatsProgress = Math.min((dailyStats.total_fats / dailyStats.goal_fats) * 100, 100);
+
+  // Animate progress bars when component mounts
+  useEffect(() => {
+    if (loading) return;
+    
+    setAnimatedProgress({ calories: 0, protein: 0, carbs: 0, fats: 0 });
+    
+    const timer = setTimeout(() => {
+      setAnimatedProgress({
+        calories: calorieProgress,
+        protein: proteinProgress,
+        carbs: carbsProgress,
+        fats: fatsProgress
+      });
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [calorieProgress, proteinProgress, carbsProgress, fatsProgress, loading]);
+
   if (loading) {
     return (
       <div className="min-h-screen pt-20 pb-24 bg-gray-950">
@@ -87,6 +116,7 @@ export const Dashboard: React.FC = () => {
       </div>
     );
   }
+  
   console.log('Rendering dashboard with:', {
     loading,
     user: !!user,
@@ -94,11 +124,6 @@ export const Dashboard: React.FC = () => {
     profile: !!profile,
     fetching: fetchingRef.current
   });
-
-  const calorieProgress = Math.min((dailyStats.total_calories / dailyStats.goal_calories) * 100, 100);
-  const proteinProgress = Math.min((dailyStats.total_protein / dailyStats.goal_protein) * 100, 100);
-  const carbsProgress = Math.min((dailyStats.total_carbs / dailyStats.goal_carbs) * 100, 100);
-  const fatsProgress = Math.min((dailyStats.total_fats / dailyStats.goal_fats) * 100, 100);
 
   return (
     <div className="min-h-screen bg-gray-950 pt-4 pb-24 px-4">
@@ -124,11 +149,11 @@ export const Dashboard: React.FC = () => {
         <div className="flex gap-0.5">
           {Array.from({ length: 40 }).map((_, i) => {
             const segmentPercent = (i + 1) * 2.5; // Each segment is 2.5%
-            const isFilled = segmentPercent <= calorieProgress;
+            const isFilled = segmentPercent <= animatedProgress.calories;
             return (
               <div
                 key={i}
-                className={`flex-1 h-2.5 rounded-sm transition-all duration-500 ${
+                className={`flex-1 h-6 rounded-sm transition-all duration-20000 ease-out ${
                   isFilled ? 'bg-green-500' : 'bg-gray-700'
                 }`}
               />
@@ -147,7 +172,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-white text-xs font-medium">Protein</p>
             </div>
             <CircularProgressMacro
-              percent={proteinProgress}
+              percent={animatedProgress.protein}
               color="bg-blue-500"
               size={80}
             />
@@ -165,7 +190,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-white text-xs font-medium">Carbs</p>
             </div>
             <CircularProgressMacro
-              percent={carbsProgress}
+              percent={animatedProgress.carbs}
               color="bg-yellow-500"
               size={80}
             />
@@ -183,7 +208,7 @@ export const Dashboard: React.FC = () => {
               <p className="text-white text-xs font-medium">Fats</p>
             </div>
             <CircularProgressMacro
-              percent={fatsProgress}
+              percent={animatedProgress.fats}
               color="bg-red-500"
               size={80}
             />
@@ -283,20 +308,20 @@ const CircularProgressMacro = ({ percent, color, size }: { percent: number; colo
     const length = Math.sqrt(dx * dx + dy * dy);
     const rotatedAngle = Math.atan2(dy, dx) + (tiltAngle * Math.PI / 180);
     
-    segments.push(
-      <rect
-        key={i}
-        x={outerX}
-        y={outerY}
-        width={length}
-        height={barWidth}
-        fill={isFilled ? fillColor : '#374151'}
-        rx={barWidth / 2}
-        className="transition-all duration-500"
-        opacity={isFilled ? 1 : 0.3}
-        transform={`rotate(${rotatedAngle * 180 / Math.PI} ${outerX} ${outerY})`}
-      />
-    );
+          segments.push(
+        <rect
+          key={i}
+          x={outerX}
+          y={outerY}
+          width={length}
+          height={barWidth}
+          fill={isFilled ? fillColor : '#374151'}
+          rx={barWidth / 2}
+          className="transition-all duration-1000 ease-out"
+          opacity={isFilled ? 1 : 0.3}
+          transform={`rotate(${rotatedAngle * 180 / Math.PI} ${outerX} ${outerY})`}
+        />
+      );
   }
   
   return (
