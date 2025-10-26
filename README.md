@@ -77,6 +77,7 @@ This project taught us so much:
 - **AI-Powered Recipe Generation**: Create recipes from any ingredients you have—with both "Assemble" mode for no-cook meals and "Cook" mode for full recipes
 - **Carbon Footprint Tracking**: Track not just your nutrition, but your environmental impact
 - **Personalized Goals**: Set and achieve nutrition goals tailored to your body type and lifestyle
+- **Deterministic Pseudo-Random Avatars**: Secure, persistent profile identities generated using a unique Linear Congruential Generator algorithm seeded by your User ID, ensuring unique yet unchanging pixel art avatars without needing image storage
 - **Beautiful, Modern UI**: A clean, dark-mode interface that makes tracking feel effortless
 
 ## Tech Stack

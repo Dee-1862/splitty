@@ -50,7 +50,7 @@ export const Dashboard: React.FC = () => {
     carbs: [230, 260, 245, 270, 240, 250, 0],
     fats: [60, 70, 65, 72, 62, 67, 0]
   });
-  const [streak] = useState({ calories: 7, carbon: 12 });
+  const [streak] = useState({ calories: 1, carbon: 1 });
   const fetchingRef = useRef(false);
 
   const fetchData = useCallback(async () => {
