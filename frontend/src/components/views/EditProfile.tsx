@@ -274,7 +274,8 @@ export const EditProfile: React.FC = () => {
   const [showAvatarSelector, setShowAvatarSelector] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
-    avatar_url: ''
+    avatar_url: '',
+    allergies: ''
   });
   const [customAvatarUrl, setCustomAvatarUrl] = useState('');
   const fetchingRef = useRef(false);
@@ -291,7 +292,8 @@ export const EditProfile: React.FC = () => {
         setProfile(profileData);
         setFormData({
           full_name: profileData.full_name || '',
-          avatar_url: profileData.avatar_url || ''
+          avatar_url: profileData.avatar_url || '',
+          allergies: profileData.allergies || ''
         });
         // Set custom URL if the avatar_url is a valid URL
         if (profileData.avatar_url && profileData.avatar_url.startsWith('http')) {
@@ -344,7 +346,7 @@ export const EditProfile: React.FC = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -530,6 +532,23 @@ export const EditProfile: React.FC = () => {
                   />
                   <p className="text-sm text-slate-500 mt-2">
                     Email cannot be changed here.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-3 uppercase tracking-wide">
+                    Allergies & Dietary Restrictions
+                  </label>
+                  <textarea
+                    name="allergies"
+                    value={formData.allergies}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Peanuts, Dairy, Gluten, Shellfish..."
+                    rows={4}
+                    className="w-full p-4 border border-slate-700/50 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-800/50 text-white placeholder-slate-500 text-lg font-semibold resize-none"
+                  />
+                  <p className="text-sm text-slate-500 mt-2">
+                    List any food allergies or dietary restrictions separated by commas
                   </p>
                 </div>
               </div>

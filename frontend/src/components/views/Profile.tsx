@@ -453,6 +453,19 @@ export const Profile: React.FC = () => {
                   <span className="text-xs text-slate-400">meals</span>
                 </div>
               </div>
+
+              {/* Allergies & Dietary Restrictions */}
+              {profile?.allergies && profile.allergies.trim() && (
+                <div className="mt-4">
+                  <div className="flex items-start gap-2 px-3 py-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                    <span className="text-amber-400 text-sm">⚠️</span>
+                    <div className="text-left">
+                      <p className="text-xs font-semibold text-amber-400 uppercase tracking-wide">Allergies & Restrictions</p>
+                      <p className="text-sm text-amber-300 mt-1">{profile.allergies}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

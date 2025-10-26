@@ -9,6 +9,7 @@ export interface Profile {
   goal_protein: number;
   goal_carbs: number;
   goal_fats: number;
+  allergies: string;
   created_at: string;
   updated_at: string;
 }

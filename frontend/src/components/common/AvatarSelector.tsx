@@ -397,96 +397,97 @@ const ANIMATED_CHARACTERS = [
 ];
 
 interface AvatarSelectorProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (avatarUrl: string) => void;
-  currentAvatarUrl?: string;
-}
-
-export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
-  isOpen,
-  onClose,
-  onSelect,
-  currentAvatarUrl
-}) => {
-  const [hoveredCharacter, setHoveredCharacter] = useState<string | null>(null);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      {/* CHANGED: Removed the padding (p-8) from here and used max-h-[90vh] */}
-      <div className="bg-slate-900/95 backdrop-blur-xl rounded-3xl border border-slate-800/50 w-full max-w-6xl **max-h-[90vh]** flex flex-col mx-4 shadow-2xl">
-        
-        {/* New Header Wrapper: Added p-8 for padding and mb-0 to control spacing */}
-        <div className="flex items-center justify-between **p-8 pb-4**">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-xl flex items-center justify-center">
-              <Sparkles className="text-white" size={20} />
-            </div>
-            <h3 className="text-2xl font-bold text-white">Choose Your Character</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-800/50 rounded-xl transition-colors text-slate-400 hover:text-white"
-          >
-            <X size={24} />
-          </button>
-        </div>
-        
-        {/* Scrollable Content Wrapper */}
-        <div className="flex-1 **overflow-y-scroll** **px-8** **-mr-2**"> 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 pb-4">
-            {ANIMATED_CHARACTERS.map((character) => (
-              <div
-                key={character.id}
-                className="relative cursor-pointer group"
-                onClick={() => onSelect(character.id)}
-                onMouseEnter={() => setHoveredCharacter(character.id)}
-                onMouseLeave={() => setHoveredCharacter(null)}
-              >
-                <div className={`relative w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
-                  currentAvatarUrl === character.id 
-                    ? 'border-emerald-500 shadow-lg shadow-emerald-500/30' 
-                    : 'border-slate-700 group-hover:border-slate-500'
-                }`}>
-                  <div className={`w-full h-full bg-gradient-to-br ${character.color} flex items-center justify-center ${
-                    hoveredCharacter === character.id ? 'scale-110' : 'scale-100'
-                  } transition-transform duration-300`}>
-                    {character.component}
-                  </div>
-                  
-                  {/* Selection indicator */}
-                  {currentAvatarUrl === character.id && (
-                    <div className="absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                      <Check size={14} className="text-white" />
-                    </div>
-                  )}
-                  
-                  {/* Hover effect */}
-                  {hoveredCharacter === character.id && (
-                    <div className="absolute inset-0 bg-white/10 rounded-2xl animate-pulse"></div>
-                  )}
-                </div>
-                
-                <p className="text-sm text-center mt-3 text-slate-300 font-medium group-hover:text-white transition-colors">
-                  {character.name}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        {/* Footer Wrapper: Added p-8 for padding and mb-0 to control spacing */}
-        <div className="mt-8 flex justify-end border-t border-slate-800/50 **p-8 pt-6**">
-          <button
-            onClick={onClose}
-            className="px-6 py-3 bg-slate-800/50 border border-slate-700/50 text-slate-300 rounded-xl hover:bg-slate-700/50 hover:text-white transition-all duration-200 font-medium"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+    isOpen: boolean;
+    onClose: () => void;
+    onSelect: (avatarUrl: string) => void;
+    currentAvatarUrl?: string;
+  }
+  
+  export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
+    isOpen,
+    onClose,
+    onSelect,
+    currentAvatarUrl
+  }) => {
+    const [hoveredCharacter, setHoveredCharacter] = useState<string | null>(null);
+  
+    if (!isOpen) return null;
+  
+    return (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        {/* Modal Container: Used max-h-[90vh] for better responsiveness and removed horizontal padding (px-8) */}
+        <div className="bg-slate-900/95 backdrop-blur-xl rounded-3xl border border-slate-800/50 w-full max-w-6xl max-h-[90vh] flex flex-col mx-4 shadow-2xl">
+          
+          {/* Header: Explicitly apply horizontal padding here */}
+          <div className="flex items-center justify-between px-8 pt-8 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-xl flex items-center justify-center">
+                <Sparkles className="text-white" size={20} />
+              </div>
+              <h3 className="text-2xl font-bold text-white">Choose Your Character</h3>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-800/50 rounded-xl transition-colors text-slate-400 hover:text-white"
+            >
+              <X size={24} />
+            </button>
+          </div>
+          
+          {/* Scrollable Content Wrapper: Key fix is using overflow-y-scroll and adding px-8/negative margin on the outside */}
+          <div className="flex-1 **overflow-y-scroll** **px-8** **pb-4** **-mr-2**"> 
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              {ANIMATED_CHARACTERS.map((character) => (
+                <div
+                  key={character.id}
+                  className="relative cursor-pointer group"
+                  onClick={() => onSelect(character.id)}
+                  onMouseEnter={() => setHoveredCharacter(character.id)}
+                  onMouseLeave={() => setHoveredCharacter(null)}
+                >
+                  {/* ... (Avatar content remains the same) ... */}
+                  <div className={`relative w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all duration-300 ${
+                    currentAvatarUrl === character.id 
+                      ? 'border-emerald-500 shadow-lg shadow-emerald-500/30' 
+                      : 'border-slate-700 group-hover:border-slate-500'
+                  }`}>
+                    <div className={`w-full h-full bg-gradient-to-br ${character.color} flex items-center justify-center ${
+                      hoveredCharacter === character.id ? 'scale-110' : 'scale-100'
+                    } transition-transform duration-300`}>
+                      {character.component}
+                    </div>
+                    
+                    {/* Selection indicator */}
+                    {currentAvatarUrl === character.id && (
+                      <div className="absolute top-2 right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                        <Check size={14} className="text-white" />
+                      </div>
+                    )}
+                    
+                    {/* Hover effect */}
+                    {hoveredCharacter === character.id && (
+                      <div className="absolute inset-0 bg-white/10 rounded-2xl animate-pulse"></div>
+                    )}
+                  </div>
+                  
+                  <p className="text-sm text-center mt-3 text-slate-300 font-medium group-hover:text-white transition-colors">
+                    {character.name}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Footer: Explicitly apply horizontal padding here */}
+          <div className="mt-8 flex justify-end border-t border-slate-800/50 **px-8 py-6**">
+            <button
+              onClick={onClose}
+              className="px-6 py-3 bg-slate-800/50 border border-slate-700/50 text-slate-300 rounded-xl hover:bg-slate-700/50 hover:text-white transition-all duration-200 font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };

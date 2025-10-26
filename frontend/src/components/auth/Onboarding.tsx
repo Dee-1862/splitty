@@ -19,12 +19,13 @@ export const Onboarding: React.FC = () => {
     weight: '',
     activity_level: 'light',
     goal_type: 'maintenance',
-    target_weight: ''
+    target_weight: '',
+    allergies: ''
   });
 
   const totalSteps = 3;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -93,7 +94,8 @@ export const Onboarding: React.FC = () => {
         goal_calories: tdee,
         goal_protein: goalProtein,
         goal_carbs: Math.round(tdee * 0.45),
-        goal_fats: Math.round(tdee * 0.25)
+        goal_fats: Math.round(tdee * 0.25),
+        allergies: formData.allergies.trim()
       });
 
       // Create user goal
@@ -262,6 +264,23 @@ export const Onboarding: React.FC = () => {
                   <option value="active">Active (hard exercise 6-7 days/week)</option>
                   <option value="very_active">Very Active (physical job + exercise)</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2.5">
+                  Allergies & Dietary Restrictions (Optional)
+                </label>
+                <textarea
+                  name="allergies"
+                  value={formData.allergies}
+                  onChange={handleInputChange}
+                  className="w-full px-5 py-3.5 bg-slate-800/50 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-500 hover:border-slate-600 resize-none"
+                  placeholder="e.g., Peanuts, Dairy, Gluten, Shellfish..."
+                  rows={3}
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  List any food allergies or dietary restrictions separated by commas
+                </p>
               </div>
             </div>
           )}

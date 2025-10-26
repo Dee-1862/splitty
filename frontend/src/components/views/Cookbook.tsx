@@ -6,19 +6,20 @@ import { geminiApi } from '../../utils/geminiApi';
 import type { DetectedIngredient } from '../../utils/geminiApi';
 import type { Recipe } from '../../utils/database';
 import { useAuth } from '../../AuthContext';
-import { getRecipes, addRecipe, deleteRecipe } from '../../utils/database';
+import { getRecipes, addRecipe, deleteRecipe, getProfile, type Profile } from '../../utils/database';
 
 export const Cookbook: React.FC = () => {
   const { user } = useAuth();
-  const [mode, setMode] = useState<'assemble' | 'cook'>('assemble');
+  const [mode, setMode] = useState<'assemble' | 'cook'>('assemble');
   const [generatedRecipes, setGeneratedRecipes] = useState<any[]>([]); // Gemini API recipes
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
   const [manualIngredients, setManualIngredients] = useState('');
   const [detectedIngredients, setDetectedIngredients] = useState<DetectedIngredient[]>([]);
   const [foodPreferences, setFoodPreferences] = useState<string[]>([]);
-  const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([]);
-  const [nutritionalFilters, setNutritionalFilters] = useState<Array<{
+  const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([]);
+  const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  const [nutritionalFilters, setNutritionalFilters] = useState<Array<{
     id: string;
     type: 'calories' | 'protein' | 'carbs' | 'fats' | 'carbon';
     min: number;
@@ -29,24 +30,37 @@ export const Cookbook: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  // Load saved recipes from Supabase when component mounts
-  useEffect(() => {
-    if (user?.id) {
-      loadSavedRecipes();
-    }
-  }, [user?.id]);
+  // Load saved recipes and user profile from Supabase when component mounts
+  useEffect(() => {
+    if (user?.id) {
+      loadSavedRecipes();
+      loadUserProfile();
+    }
+  }, [user?.id]);
 
-  const loadSavedRecipes = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const recipes = await getRecipes(user.id);
-      setSavedRecipes(recipes);
-    } catch (error) {
-      console.error('Error loading saved recipes:', error);
-      toast.error('Failed to load saved recipes');
-    }
-  };
+  const loadSavedRecipes = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const recipes = await getRecipes(user.id);
+      setSavedRecipes(recipes);
+    } catch (error) {
+      console.error('Error loading saved recipes:', error);
+      toast.error('Failed to load saved recipes');
+    }
+  };
+
+  const loadUserProfile = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const profile = await getProfile(user.id);
+      setUserProfile(profile);
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      // Don't show error toast for profile loading as it's not critical for cookbook functionality
+    }
+  };
 
   // Food preference options
   const foodPreferenceOptions = [
@@ -165,26 +179,67 @@ export const Cookbook: React.FC = () => {
   };
 
 
-  // Remove saved recipe
-  const removeSavedRecipe = async (recipeId: string) => {
-    if (!user?.id) {
-      toast.error('Please log in to manage recipes');
-      return;
-    }
+  // Remove saved recipe
+  const removeSavedRecipe = async (recipeId: string) => {
+    if (!user?.id) {
+      toast.error('Please log in to manage recipes');
+      return;
+    }
 
-    try {
-      const success = await deleteRecipe(recipeId);
-      if (success) {
-        setSavedRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
-        toast.success('Recipe removed from cookbook');
-      } else {
-        toast.error('Failed to remove recipe');
-      }
-    } catch (error) {
-      console.error('Error removing recipe:', error);
-      toast.error('Failed to remove recipe');
-    }
-  };
+    try {
+      const success = await deleteRecipe(recipeId);
+      if (success) {
+        setSavedRecipes(prev => prev.filter(recipe => recipe.id !== recipeId));
+        toast.success('Recipe removed from cookbook');
+      } else {
+        toast.error('Failed to remove recipe');
+      }
+    } catch (error) {
+      console.error('Error removing recipe:', error);
+      toast.error('Failed to remove recipe');
+    }
+  };
+
+  // Save generated recipe to cookbook
+  const saveRecipe = async (recipe: any) => {
+    if (!user?.id) {
+      toast.error('Please log in to save recipes');
+      return;
+    }
+
+    try {
+      // Convert Gemini recipe format to database format with proper data types
+      const recipeData = {
+        user_id: user.id,
+        title: recipe.title || 'Generated Recipe',
+        description: recipe.description || '',
+        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+        instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
+        prep_time: parseInt(recipe.prep_time) || 0,
+        cook_time: parseInt(recipe.cook_time) || 0,
+        servings: parseInt(recipe.servings) || 1,
+        calories_per_serving: parseInt(recipe.calories_per_serving) || 0,
+        protein_per_serving: parseFloat(recipe.protein_per_serving) || 0,
+        carbs_per_serving: parseFloat(recipe.carbs_per_serving) || 0,
+        fats_per_serving: parseFloat(recipe.fats_per_serving) || 0,
+        carbon_per_serving: parseFloat(recipe.carbon_per_serving) || 0,
+        image_url: recipe.image_url || null,
+        is_ai_generated: true
+      };
+
+      console.log('Saving recipe data:', recipeData); // Debug log
+      const savedRecipe = await addRecipe(recipeData);
+      if (savedRecipe) {
+        setSavedRecipes(prev => [savedRecipe, ...prev]);
+        toast.success('Recipe saved to cookbook!');
+      } else {
+        toast.error('Failed to save recipe');
+      }
+    } catch (error) {
+      console.error('Error saving recipe:', error);
+      toast.error('Failed to save recipe');
+    }
+  };
 
 
   // Handle camera capture
@@ -270,22 +325,30 @@ export const Cookbook: React.FC = () => {
         ...manualIngredients.split(',').map(ing => ing.trim()).filter(ing => ing)
       ];
 
-      // Create preference context for recipe generation
-      const preferenceContext = foodPreferences.length > 0 
-        ? `\n\nPlease consider these preferences: ${foodPreferences.map(pref => {
-            const option = foodPreferenceOptions.find(opt => opt.id === pref);
-            return option ? option.description : pref;
-          }).join(', ')}`
-        : '';
+      // Create preference context for recipe generation
+      const preferenceContext = foodPreferences.length > 0 
+        ? `\n\nPlease consider these preferences: ${foodPreferences.map(pref => {
+            const option = foodPreferenceOptions.find(opt => opt.id === pref);
+            return option ? option.description : pref;
+          }).join(', ')}`
+        : '';
 
-      console.log('Generating recipe with:', {
-        ingredients: allIngredients,
-        mode,
-        preferences: foodPreferences,
-        preferenceContext
-      });
+      // Add allergy restrictions to the context
+      const allergyContext = userProfile?.allergies && userProfile.allergies.trim()
+        ? `\n\nIMPORTANT: The user has the following allergies and dietary restrictions that MUST be avoided: ${userProfile.allergies}. Do NOT include any of these ingredients in the recipe. If any of the provided ingredients contain these allergens, suggest alternatives or omit them entirely.`
+        : '';
 
-      const recipe = await geminiApi.generateRecipe(allIngredients, mode, preferenceContext);
+      const fullContext = preferenceContext + allergyContext;
+
+      console.log('Generating recipe with:', {
+        ingredients: allIngredients,
+        mode,
+        preferences: foodPreferences,
+        allergies: userProfile?.allergies,
+        preferenceContext: fullContext
+      });
+
+      const recipe = await geminiApi.generateRecipe(allIngredients, mode, fullContext);
       console.log('Generated recipe:', recipe);
       
       setGeneratedRecipes(prev => [recipe, ...prev]);
@@ -314,27 +377,9 @@ export const Cookbook: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  };
 
-  // Test Gemini API connection
-  const testGeminiConnection = async () => {
-    try {
-      const isConnected = await geminiApi.testConnection();
-      if (isConnected) {
-        setServiceStatus('online');
-        toast.success('Gemini API connection successful!');
-      } else {
-        setServiceStatus('offline');
-        toast.error('Gemini API connection failed. Please check your API key.');
-      }
-    } catch (error) {
-      console.error('Error testing Gemini connection:', error);
-      setServiceStatus('offline');
-      toast.error('Failed to test Gemini API connection.');
-    }
-  };
-
-  return (
+  return (
     <div className="min-h-screen bg-slate-950">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         
@@ -346,31 +391,31 @@ export const Cookbook: React.FC = () => {
           <p className="text-sm text-slate-500 font-medium tracking-wide">
             AI-powered recipe generation from ingredients
           </p>
-      </div>
+      </div>
 
         {/* Mode Selection Tabs */}
         <div className="mb-8 flex gap-3">
-          <button
-            onClick={() => setMode('assemble')}
+          <button
+            onClick={() => setMode('assemble')}
             className={`px-6 py-3 rounded-2xl font-medium transition-all duration-300 ${
-              mode === 'assemble'
+              mode === 'assemble'
                 ? 'bg-white/10 text-white border border-white/20'
                 : 'bg-slate-900/30 text-slate-400 border border-slate-800/50 hover:bg-slate-900/50'
             }`}
           >
             🥗 Assemble
-          </button>
-          <button
-            onClick={() => setMode('cook')}
+          </button>
+          <button
+            onClick={() => setMode('cook')}
             className={`px-6 py-3 rounded-2xl font-medium transition-all duration-300 ${
-              mode === 'cook'
+              mode === 'cook'
                 ? 'bg-white/10 text-white border border-white/20'
                 : 'bg-slate-900/30 text-slate-400 border border-slate-800/50 hover:bg-slate-900/50'
             }`}
           >
             🍳 Cook
-          </button>
-        </div>
+          </button>
+        </div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -387,7 +432,7 @@ export const Cookbook: React.FC = () => {
                   <h2 className="text-sm font-semibold text-white uppercase tracking-wide">
                     Filters
                   </h2>
-      </div>
+      </div>
 
                 {/* Food Preferences */}
                 <div className="mb-6">
@@ -408,7 +453,30 @@ export const Cookbook: React.FC = () => {
                     ))}
                   </div>
                 </div>
-          
+
+                {/* Allergy Information */}
+                {userProfile?.allergies && userProfile.allergies.trim() && (
+                  <div className="mb-6">
+                    <h3 className="text-xs font-medium text-slate-400 mb-3 uppercase tracking-wide">Allergy Restrictions</h3>
+                    <div className="relative bg-amber-500/10 backdrop-blur-sm rounded-2xl p-4 border border-amber-500/20">
+                      <div className="flex items-start gap-3">
+                        <span className="text-amber-400 text-sm mt-0.5">⚠️</span>
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-amber-400 uppercase tracking-wide mb-1">
+                            Active Restrictions
+                          </p>
+                          <p className="text-sm text-amber-300">
+                            {userProfile.allergies}
+                          </p>
+                          <p className="text-xs text-amber-400/80 mt-2">
+                            These allergens will be avoided in all generated recipes
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+         
                 {/* Nutritional Filters */}
                 <div>
                   <h3 className="text-xs font-medium text-slate-400 mb-3 uppercase tracking-wide">Nutrition</h3>
@@ -435,7 +503,7 @@ export const Cookbook: React.FC = () => {
                               className="p-2 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition-all duration-200 border border-red-500/20 hover:border-red-500/40"
                             >
                               <X size={16} />
-                            </button>
+        </button>
                           )}
                         </div>
                         <div className="grid grid-cols-2 gap-3">
@@ -476,7 +544,7 @@ export const Cookbook: React.FC = () => {
                     >
                       <span className="text-lg">+</span>
                       Add Filter
-                    </button>
+        </button>
                   </div>
                 </div>
               </div>
@@ -516,7 +584,7 @@ export const Cookbook: React.FC = () => {
                       <Upload size={24} className="text-rose-400" />
                       <span className="text-sm font-medium text-white">Gallery</span>
                    </button>
-      </div>
+      </div>
 
             {/* Hidden file inputs */}
             <input
@@ -527,7 +595,7 @@ export const Cookbook: React.FC = () => {
               onChange={handleGalleryUpload}
               className="hidden"
             />
-          <input
+          <input
               ref={cameraInputRef}
               type="file"
               accept="image/*"
@@ -575,8 +643,8 @@ export const Cookbook: React.FC = () => {
                       </div>
                     </div>
                   )}
-        </div>
-      </div>
+        </div>
+      </div>
 
               {/* Manual Entry Section */}
               <div className="relative bg-slate-900/30 backdrop-blur-xl rounded-3xl border border-slate-800/50 p-6 overflow-hidden">
@@ -595,7 +663,7 @@ export const Cookbook: React.FC = () => {
                     />
                   </div>
                   
-                  <button 
+      <button 
                     onClick={generateRecipe}
                     disabled={loading || (detectedIngredients.length === 0 && !manualIngredients.trim())}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 px-6 rounded-2xl font-semibold transition-all duration-300 flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/20 mt-4"
@@ -611,7 +679,7 @@ export const Cookbook: React.FC = () => {
                         <span>Generate Recipe</span>
                       </>
                     )}
-                  </button>
+      </button>
                 </div>
               </div>
             </div>
@@ -621,9 +689,9 @@ export const Cookbook: React.FC = () => {
               <div>
                 <h2 className="text-2xl font-semibold text-white mb-4 tracking-tight">Generated Recipes</h2>
                 <div className="space-y-4">
-                  {generatedRecipes.map((recipe, index) => ( // Added index for key
-                    <RecipeCard key={recipe.id || `gen-${index}`} recipe={recipe} /> // Added fallback key
-                  ))}
+                  {generatedRecipes.map((recipe, index) => ( // Added index for key
+                    <RecipeCard key={recipe.id || `gen-${index}`} recipe={recipe} onSave={saveRecipe} /> // Added onSave prop
+                  ))}
             </div>
           </div>
           )}
@@ -653,7 +721,7 @@ export const Cookbook: React.FC = () => {
 };
 
 // Recipe Card Component
-const RecipeCard: React.FC<{ recipe: any }> = ({ recipe }) => { // Use 'any' since it's from Gemini
+const RecipeCard: React.FC<{ recipe: any; onSave: (recipe: any) => void }> = ({ recipe, onSave }) => { // Added onSave prop
   return (
     <div className="bg-slate-900/30 backdrop-blur-xl rounded-3xl border border-slate-800/50 hover:border-slate-700/50 transition-all duration-300 overflow-hidden">
       <div className="p-6">
@@ -714,16 +782,19 @@ const RecipeCard: React.FC<{ recipe: any }> = ({ recipe }) => { // Use 'any' sin
              </li>
             ))}
           </ol>
-     </div>
+        </div>
         
-        <div className="mt-6 pt-6 border-t border-slate-800/50">
-          <button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-6 rounded-2xl transition-colors flex items-center justify-center gap-2 font-medium">
-            <ChefHat size={18} />
-            Save to Cookbook
-          </button>
-       </div>
-    </div>
-  </div>
+        <div className="mt-6 pt-6 border-t border-slate-800/50">
+          <button 
+            onClick={() => onSave(recipe)}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-6 rounded-2xl transition-colors flex items-center justify-center gap-2 font-medium"
+          >
+            <ChefHat size={18} />
+            Save to Cookbook
+          </button>
+        </div>
+              </div>
+            </div>
   );
 };
 
@@ -843,8 +914,8 @@ const SavedRecipeCard: React.FC<{
               </button>
          </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        </div>
+      )}
+    </div>
+  );
 };
