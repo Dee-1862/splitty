@@ -145,6 +145,17 @@ export type NewMeal = {
 };
 
 export const addMeal = async (meal: NewMeal) => {
+  console.log('Attempting to add meal:', meal);
+  
+  // Check if user is authenticated
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    console.error('No authenticated session found');
+    throw new Error('User not authenticated');
+  }
+  
+  console.log('User authenticated:', session.user.id);
+  
   // Assuming your table is named 'meals'
   const { data, error } = await supabase
     .from('meals')
@@ -152,10 +163,17 @@ export const addMeal = async (meal: NewMeal) => {
     .select();
 
   if (error) {
-    console.error('Error adding meal:', error.message);
-    throw new Error(error.message);
+    console.error('Error adding meal:', error);
+    console.error('Error details:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
+    throw new Error(`Failed to add meal: ${error.message}`);
   }
 
+  console.log('Meal added successfully:', data);
   return data;
 };
 
@@ -291,7 +309,7 @@ export const calculateDayStreak = (meals: Meal[]): number => {
   const today = new Date().toISOString().split('T')[0];
   
   for (let i = 0; i < dates.length; i++) {
-    const currentDate = new Date(dates[i]);
+    // const currentDate = new Date(dates[i]);
     const expectedDate = new Date(today);
     expectedDate.setDate(expectedDate.getDate() - i);
     const expectedDateStr = expectedDate.toISOString().split('T')[0];
