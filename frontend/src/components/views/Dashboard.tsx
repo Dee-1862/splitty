@@ -248,146 +248,62 @@ export const Dashboard: React.FC = () => {
 };
 
 const CircularProgressMacro = ({ percent, color, size }: { percent: number; color: string; size: number }) => {
-  const radius = (size - 24) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - (percent / 100) * circumference;
+  const numSegments = 18;
+  const segmentAngle = 360 / numSegments;
+  const radius = size / 2 - 2;
+  const barWidth = 5;
+  const barHeight = 15;
+  const tiltAngle = 15; // Tilt bars 12 degrees
   
-  // Extract color value with futuristic glow
-  const colorMap: Record<string, { main: string; glow: string; bg: string }> = {
-    'bg-blue-500': { main: '#3b82f6', glow: '#60a5fa', bg: '#1e3a8a' },
-    'bg-yellow-500': { main: '#eab308', glow: '#fde047', bg: '#a16207' },
-    'bg-red-500': { main: '#ef4444', glow: '#f87171', bg: '#991b1b' },
+  // Color mapping
+  const colorMap: Record<string, string> = {
+    'bg-blue-500': '#3b82f6',
+    'bg-yellow-500': '#eab308',
+    'bg-red-500': '#ef4444',
   };
-  const colors = colorMap[color] || colorMap['bg-blue-500'];
+  const fillColor = colorMap[color] || '#3b82f6';
+  
+  const segments = [];
+  for (let i = 0; i < numSegments; i++) {
+    const angle = (i * segmentAngle) * Math.PI / 180;
+    const outerRadius = radius;
+    const innerRadius = radius - barHeight;
+    
+    const outerX = size / 2 + outerRadius * Math.cos(angle - Math.PI / 2);
+    const outerY = size / 2 + outerRadius * Math.sin(angle - Math.PI / 2);
+    const innerX = size / 2 + innerRadius * Math.cos(angle - Math.PI / 2);
+    const innerY = size / 2 + innerRadius * Math.sin(angle - Math.PI / 2);
+    
+    const segmentPercent = ((i + 1) / numSegments) * 100;
+    const isFilled = segmentPercent <= percent;
+    
+    // Draw rectangle pointing inward with tilt
+    const dx = innerX - outerX;
+    const dy = innerY - outerY;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const rotatedAngle = Math.atan2(dy, dx) + (tiltAngle * Math.PI / 180);
+    
+    segments.push(
+      <rect
+        key={i}
+        x={outerX}
+        y={outerY}
+        width={length}
+        height={barWidth}
+        fill={isFilled ? fillColor : '#374151'}
+        rx={barWidth / 2}
+        className="transition-all duration-500"
+        opacity={isFilled ? 1 : 0.3}
+        transform={`rotate(${rotatedAngle * 180 / Math.PI} ${outerX} ${outerY})`}
+      />
+    );
+  }
   
   return (
-    <div className="relative" style={{ width: size, height: size }}>
-      {/* Outer glow effect */}
-      <div 
-        className="absolute inset-0 rounded-full opacity-30 animate-pulse"
-        style={{
-          background: `radial-gradient(circle, ${colors.glow}20 0%, transparent 70%)`,
-          filter: 'blur(8px)',
-        }}
-      />
-      
-      <svg
-        width={size}
-        height={size}
-        className="transform -rotate-90 relative z-10"
-        style={{ width: size, height: size }}
-      >
-        {/* Outer ring for depth */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius + 4}
-          stroke={colors.bg}
-          strokeWidth="2"
-          fill="none"
-          opacity="0.3"
-        />
-        
-        {/* Background circle with gradient */}
-        <defs>
-          <linearGradient id={`bg-${color}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={colors.bg} stopOpacity="0.8" />
-            <stop offset="100%" stopColor={colors.bg} stopOpacity="0.4" />
-          </linearGradient>
-          <linearGradient id={`progress-${color}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={colors.main} stopOpacity="1" />
-            <stop offset="50%" stopColor={colors.glow} stopOpacity="0.9" />
-            <stop offset="100%" stopColor={colors.main} stopOpacity="0.8" />
-          </linearGradient>
-          <filter id={`glow-${color}`}>
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge> 
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-        
-        {/* Background circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={`url(#bg-${color})`}
-          strokeWidth="6"
-          fill="none"
-        />
-        
-        {/* Progress circle with glow */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={`url(#progress-${color})`}
-          strokeWidth="6"
-          fill="none"
-          strokeDasharray={strokeDasharray}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          filter={`url(#glow-${color})`}
-          className="transition-all duration-1500 ease-out"
-          style={{
-            strokeDasharray: circumference,
-            strokeDashoffset: strokeDashoffset,
-          }}
-        />
-        
-        {/* Inner highlight ring */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius - 3}
-          stroke={colors.glow}
-          strokeWidth="1"
-          fill="none"
-          opacity="0.6"
-        />
+    <div className="flex items-center justify-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {segments}
       </svg>
-      
-      {/* Percentage text in center with glow */}
-      <div className="absolute inset-0 flex items-center justify-center z-20">
-        <div className="relative">
-          <span 
-            className="text-white text-sm font-bold drop-shadow-lg"
-            style={{
-              textShadow: `0 0 10px ${colors.glow}, 0 0 20px ${colors.glow}40`,
-            }}
-          >
-            {Math.round(percent)}%
-          </span>
-        </div>
-      </div>
-      
-      {/* Animated dots around the circle */}
-      <div className="absolute inset-0 animate-spin" style={{ animationDuration: '8s' }}>
-        {Array.from({ length: 8 }).map((_, i) => {
-          const angle = (i * 45) * Math.PI / 180;
-          const dotRadius = radius + 8;
-          const x = size / 2 + dotRadius * Math.cos(angle);
-          const y = size / 2 + dotRadius * Math.sin(angle);
-          const opacity = (percent / 100) * 0.6;
-          
-          return (
-            <div
-              key={i}
-              className="absolute w-1 h-1 rounded-full"
-              style={{
-                left: x - 2,
-                top: y - 2,
-                backgroundColor: colors.glow,
-                opacity: opacity,
-                boxShadow: `0 0 6px ${colors.glow}`,
-              }}
-            />
-          );
-        })}
-      </div>
     </div>
   );
 };
