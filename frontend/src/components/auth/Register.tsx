@@ -19,66 +19,113 @@ export const Register: React.FC = () => {
       return;
     }
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/onboarding`
+      }
+    });
 
     if (error) {
       setError(error.message);
     } else {
-      if (data.user) {
-        setMessage('Registration successful! Redirecting to Dashboard...');
-        setTimeout(() => navigate('/dashboard'), 1500);
-      } else {
-        setMessage('Success! Check your email to confirm your account before logging in.');
-        setTimeout(() => navigate('/'), 3000);
-      }
+      setMessage('Registration successful! Setting up your profile...');
+      setTimeout(() => navigate('/onboarding'), 1500);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-20 p-8 bg-white rounded-2xl shadow-lg">
-      <h2 className="text-3xl font-bold text-center mb-6 text-gray-900">Sign Up</h2>
-      {message && (
-        <p className="text-green-600 mb-4 font-semibold text-center">{message}</p>
-      )}
-      {!message && (
-        <form onSubmit={handleRegister}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email:</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            />
+    <div className="flex items-center justify-center min-h-screen px-4">
+      <div className="w-full max-w-md relative z-10">
+        {/* Background decoration icons */}
+        <div className="absolute inset-0 opacity-10 -z-10 pointer-events-none">
+          <div className="absolute top-20 left-10 text-6xl">🥗</div>
+          <div className="absolute top-40 right-16 text-5xl">🌿</div>
+          <div className="absolute bottom-40 left-20 text-7xl">🥑</div>
+          <div className="absolute bottom-20 right-10 text-6xl">🍎</div>
+          <div className="absolute top-1/2 left-1/4 text-5xl">🥦</div>
+          <div className="absolute top-1/3 right-1/3 text-4xl">🌱</div>
+          <div className="absolute top-2/3 left-1/2 text-5xl">🥝</div>
+          <div className="absolute bottom-1/4 right-1/4 text-6xl">🍃</div>
+        </div>
+
+        {/* Signup Card */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl shadow-lg mb-6">
+            <span className="text-5xl">🍽️</span>
           </div>
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password (min 6 chars):
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md hover:shadow-lg"
-          >
-            Register
-          </button>
-        </form>
-      )}
-      {error && <p className="text-red-500 mt-4 text-sm text-center">{error}</p>}
-      <p className="text-center mt-6 text-sm text-gray-600">
-        Already have an account?{' '}
-        <a href="/login" className="text-primary-600 hover:text-primary-700 font-medium">
-          Log in
-        </a>
-      </p>
+          <h1 className="text-4xl font-bold text-white mb-2">Get Started</h1>
+          <p className="text-gray-400">Create your MindMeal account</p>
+        </div>
+
+        <div className="bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-800 p-8">
+          {message ? (
+            <div className="text-center py-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/20 rounded-full mb-4">
+                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Success!</h3>
+              <p className="text-gray-300 mb-4">{message}</p>
+            </div>
+          ) : (
+            <form onSubmit={handleRegister}>
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-gray-300 mb-2.5">Email Address</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full px-5 py-3.5 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-gray-500 hover:border-gray-600"
+                  placeholder="you@example.com"
+                />
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-300 mb-2.5">
+                  Password (min 6 characters)
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-5 py-3.5 bg-gray-800/50 border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-gray-500 hover:border-gray-600"
+                  placeholder="••••••••"
+                />
+                <p className="text-xs text-gray-500 mt-2">Use at least 6 characters for your password</p>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-semibold shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 transform hover:-translate-y-0.5 active:translate-y-0"
+              >
+                Create Account
+              </button>
+            </form>
+          )}
+
+          {error && !message && (
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+              <p className="text-red-400 text-sm text-center">{error}</p>
+            </div>
+          )}
+
+          {!message && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-400">
+                Already have an account?{' '}
+                <a href="/login" className="text-primary-500 hover:text-primary-400 font-semibold transition-colors">
+                  Sign in
+                </a>
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
